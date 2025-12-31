@@ -1,0 +1,863 @@
+/* =====================================================================
+   PostgreSQL Schema — Social + Gamification + League + Duels + Missions
+   Sade Versiyon: Tablolar, açıklamaları ve içerikleri
+   ===================================================================== */
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Ledger/join tabloları için güvenlik: UPDATE ile cache'lerin bozulmasını engelle (append-only)
+CREATE OR REPLACE FUNCTION fn_prevent_updates()
+RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION '%: UPDATE is not allowed (append-only table).', TG_TABLE_NAME
+  USING ERRCODE = 'check_violation';
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ---------------------------------------------------------------------
+-- 1) LeagueConfigs — Lig kuralları
+-- ---------------------------------------------------------------------
+-- Lig seviyelerinin (tier) yapılandırmasını tutar.
+-- Her tier için yükselme/düşme yüzdeleri, oda boyutları gibi kurallar tanımlanır.
+
+CREATE TABLE LeagueConfigs (
+  TierName VARCHAR(20) PRIMARY KEY,
+  TierOrder INT NOT NULL UNIQUE CHECK (TierOrder > 0),
+  PromotePercentage INT NOT NULL CHECK (PromotePercentage BETWEEN 0 AND 100),
+  DemotePercentage  INT NOT NULL CHECK (DemotePercentage  BETWEEN 0 AND 100),
+  MinRoomSize INT NOT NULL DEFAULT 10 CHECK (MinRoomSize > 0),
+  MaxRoomSize INT NOT NULL DEFAULT 20 CHECK (MaxRoomSize >= MinRoomSize),
+  CONSTRAINT CHK_LeagueConfigs_PercentSum
+    CHECK (PromotePercentage + DemotePercentage <= 100)
+);
+
+INSERT INTO LeagueConfigs (TierName, TierOrder, PromotePercentage, DemotePercentage, MinRoomSize, MaxRoomSize)
+VALUES
+  ('ISINMA',       1, 30,  0, 10, 20),
+  ('ANTRENMAN',    2, 20, 10, 10, 20),
+  ('TEMPO',        3, 20, 10, 10, 20),
+  ('FORM',         4, 20, 10, 10, 20),
+  ('KONDISYON',    5, 20, 10, 10, 20),
+  ('DAYANIKLILIK', 6, 20, 10, 10, 20),
+  ('SAMPIYON',     7,  0, 20, 10, 20)
+ON CONFLICT (TierName) DO NOTHING;
+
+
+-- ---------------------------------------------------------------------
+-- 2) Titles — Ünvan kataloğu
+-- ---------------------------------------------------------------------
+-- Kullanıcıların kazanabileceği ünvanları tutar.
+
+CREATE TABLE Titles (
+  Id VARCHAR(50) PRIMARY KEY,
+  Name VARCHAR(100) NOT NULL,
+  Description TEXT,
+  ImageUrl TEXT,
+  Category VARCHAR(20) CHECK (Category IN ('BRONZE','SILVER','GOLD','PLATINUM','SPECIAL'))
+);
+
+
+-- ---------------------------------------------------------------------
+-- 3) Users — Kullanıcı profili ve oyun verisi
+-- ---------------------------------------------------------------------
+-- Uygulama kullanıcılarının profil bilgileri ve oyun istatistiklerini tutar.
+-- Kimlik doğrulama harici bir sağlayıcı üzerinden yapılır.
+
+CREATE TABLE Users (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  Username VARCHAR(50)  NOT NULL,
+  Email    VARCHAR(100) NOT NULL,
+  AvatarId INT NOT NULL DEFAULT 1 CHECK (AvatarId > 0),
+  City     VARCHAR(50),
+  Bio      VARCHAR(150),
+  TotalPoints BIGINT NOT NULL DEFAULT 0 CHECK (TotalPoints >= 0),
+  FreezeInventory INT NOT NULL DEFAULT 0 CHECK (FreezeInventory >= 0),
+  StreakCount     INT NOT NULL DEFAULT 0 CHECK (StreakCount     >= 0),
+  LastStreakDate  DATE,
+  -- En uzun seri sayısı (UI'da "Seri Detayı" modalında gösterilir)
+  -- Streak job'u her streak güncellemesinde: LongestStreakCount = max(LongestStreakCount, StreakCount) yapar
+  LongestStreakCount INT NOT NULL DEFAULT 0 CHECK (LongestStreakCount >= 0),
+  CONSTRAINT CHK_Users_StreakLogic
+    CHECK (StreakCount = 0 OR LastStreakDate IS NOT NULL),
+  TotalTasksCompleted INT NOT NULL DEFAULT 0 CHECK (TotalTasksCompleted >= 0),
+  TotalDuelsWon       INT NOT NULL DEFAULT 0 CHECK (TotalDuelsWon       >= 0),
+  TotalGlobalMissions INT NOT NULL DEFAULT 0 CHECK (TotalGlobalMissions >= 0),
+  FollowingCount      INT NOT NULL DEFAULT 0 CHECK (FollowingCount      >= 0),
+  FollowersCount      INT NOT NULL DEFAULT 0 CHECK (FollowersCount      >= 0),
+  CurrentTier VARCHAR(20) NOT NULL DEFAULT 'ISINMA'
+    REFERENCES LeagueConfigs(TierName) ON UPDATE CASCADE,
+  SelectedTitleId VARCHAR(50) REFERENCES Titles(Id),
+  HealthPermissionGranted BOOLEAN NOT NULL DEFAULT FALSE,
+  HealthPermissionGrantedAt TIMESTAMPTZ,
+  Metadata JSONB,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT CHK_Users_UsernameNotBlank CHECK (length(btrim(Username)) > 0),
+  CONSTRAINT CHK_Users_EmailNotBlank    CHECK (length(btrim(Email)) > 0),
+  CONSTRAINT CHK_Users_UsernameTrimmed  CHECK (Username = btrim(Username)),
+  CONSTRAINT CHK_Users_EmailTrimmed     CHECK (Email    = btrim(Email)),
+  CONSTRAINT CHK_Users_HealthPermissionGrantedAt
+    CHECK (HealthPermissionGranted = FALSE OR HealthPermissionGrantedAt IS NOT NULL)
+);
+
+CREATE UNIQUE INDEX UX_Users_Username_CI ON Users (LOWER(Username));
+CREATE UNIQUE INDEX UX_Users_Email_CI    ON Users (LOWER(Email));
+
+
+-- ---------------------------------------------------------------------
+-- 4) AuthIdentities — Harici auth sağlayıcı kimlik eşlemesi
+-- ---------------------------------------------------------------------
+-- Kullanıcıların harici kimlik doğrulama sağlayıcıları (Google, Apple, vb.) ile eşleştirmesini tutar.
+-- Bir kullanıcı birden fazla sağlayıcıya bağlanabilir.
+
+CREATE TABLE AuthIdentities (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  Provider VARCHAR(30) NOT NULL,
+  ProviderUserId TEXT NOT NULL,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (Provider, ProviderUserId),
+  UNIQUE (UserId, Provider)
+);
+
+CREATE INDEX IX_AuthIdentities_User ON AuthIdentities (UserId);
+
+
+-- ---------------------------------------------------------------------
+-- 5) UserSettings — Kullanıcı tercihleri
+-- ---------------------------------------------------------------------
+-- Kullanıcıların uygulama ayarlarını ve bildirim tercihlerini tutar (1-1 ilişki).
+
+CREATE TABLE UserSettings (
+  UserId UUID PRIMARY KEY REFERENCES Users(Id) ON DELETE CASCADE,
+  Language   VARCHAR(10) NOT NULL DEFAULT 'tr-TR',
+  Theme      VARCHAR(10) NOT NULL DEFAULT 'LIGHT'  CHECK (Theme IN ('LIGHT','DARK','SYSTEM')),
+  UnitSystem VARCHAR(10) NOT NULL DEFAULT 'METRIC' CHECK (UnitSystem IN ('METRIC','IMPERIAL')),
+  NotifyDuelRequests   BOOLEAN NOT NULL DEFAULT TRUE,
+  NotifyLeagueChanges  BOOLEAN NOT NULL DEFAULT TRUE,
+  NotifyFriendActivity BOOLEAN NOT NULL DEFAULT TRUE,
+  NotifyMissionUpdates BOOLEAN NOT NULL DEFAULT TRUE,
+  IsPushEnabled BOOLEAN NOT NULL DEFAULT TRUE,
+  DoNotDisturbEnabled BOOLEAN NOT NULL DEFAULT FALSE,
+  DoNotDisturbStart TIME,
+  DoNotDisturbEnd   TIME,
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 6) Friendships — Takip ilişkisi
+-- ---------------------------------------------------------------------
+-- Kullanıcılar arasındaki takip ilişkilerini tutar (follower-following).
+
+CREATE TABLE Friendships (
+  FollowerId  UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  FollowingId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  CreatedAt   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (FollowerId, FollowingId),
+  CONSTRAINT CHK_Friendships_NoSelf CHECK (FollowerId <> FollowingId)
+);
+
+CREATE INDEX IX_Friendships_ByFollowing ON Friendships (FollowingId, FollowerId);
+
+CREATE TRIGGER trg_friendships_prevent_updates
+BEFORE UPDATE ON Friendships
+FOR EACH ROW EXECUTE PROCEDURE fn_prevent_updates();
+
+-- Mutual (arkadaş) = iki yönlü follow
+CREATE OR REPLACE VIEW MutualFriends AS
+SELECT
+  f1.FollowerId  AS UserId,
+  f1.FollowingId AS FriendId
+FROM Friendships f1
+WHERE EXISTS (
+  SELECT 1
+  FROM Friendships f2
+  WHERE f2.FollowerId  = f1.FollowingId
+    AND f2.FollowingId = f1.FollowerId
+);
+
+
+-- ---------------------------------------------------------------------
+-- 7) Badges — Rozet kataloğu
+-- ---------------------------------------------------------------------
+-- Kullanıcıların kazanabileceği rozetleri tutar.
+
+CREATE TABLE Badges (
+  Id          VARCHAR(50) PRIMARY KEY,
+  Name        VARCHAR(100) NOT NULL,
+  Description TEXT,
+  ImageUrl    TEXT,
+  Category    VARCHAR(20) CHECK (Category IN ('BRONZE','SILVER','GOLD','PLATINUM','SPECIAL'))
+);
+
+
+-- ---------------------------------------------------------------------
+-- 8) UserBadges — Kalıcı rozet sahipliği
+-- ---------------------------------------------------------------------
+-- Kullanıcıların kazandığı kalıcı rozetleri tutar (tek seferlik rozetler için).
+
+CREATE TABLE UserBadges (
+  UserId  UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  BadgeId VARCHAR(50) NOT NULL REFERENCES Badges(Id) ON DELETE CASCADE,
+  EarnedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  IsPinned BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (UserId, BadgeId)
+);
+
+
+-- ---------------------------------------------------------------------
+-- 9) UserBadgeAwards — Tekrarlanabilen rozet kazanç geçmişi
+-- ---------------------------------------------------------------------
+-- Tekrarlanabilen rozetler/ödüller için kazanç geçmişini tutar.
+
+CREATE TABLE UserBadgeAwards (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId  UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  BadgeId VARCHAR(50) NOT NULL REFERENCES Badges(Id) ON DELETE CASCADE,
+  AwardedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  Context TEXT
+);
+
+CREATE INDEX IX_UserBadgeAwards_UserTime
+ON UserBadgeAwards (UserId, AwardedAt DESC);
+
+
+-- ---------------------------------------------------------------------
+-- 10) MilestoneTypes — Milestone türleri kataloğu
+-- ---------------------------------------------------------------------
+-- Başarı milestone türlerini tutar (örn: TASKS_COMPLETED, DUELS_WON, STREAK_DAYS).
+
+CREATE TABLE MilestoneTypes (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  Code VARCHAR(50) NOT NULL UNIQUE,
+  Name VARCHAR(100) NOT NULL,
+  Description TEXT,
+  IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+-- ---------------------------------------------------------------------
+-- 11) MilestoneRewards — Başarı eşikleri ve ödüller
+-- ---------------------------------------------------------------------
+-- Kullanıcıların belirli kilometre taşlarına ulaştığında kazanacağı rozet, ünvan veya dondurma hakkı kurallarını tanımlar.
+-- Dondurma hakkı kazanma da bu tablo üzerinden yönetilir (FreezeReward > 0).
+
+CREATE TABLE MilestoneRewards (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  MilestoneTypeId UUID NOT NULL REFERENCES MilestoneTypes(Id),
+  RequiredCount INT NOT NULL CHECK (RequiredCount > 0),
+  BadgeId VARCHAR(50) REFERENCES Badges(Id),
+  TitleId VARCHAR(50) REFERENCES Titles(Id),
+  FreezeReward INT NOT NULL DEFAULT 0 CHECK (FreezeReward >= 0),
+  Description TEXT,
+  IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+  UNIQUE (MilestoneTypeId, RequiredCount)
+);
+
+CREATE INDEX IX_MilestoneRewards_Type ON MilestoneRewards (MilestoneTypeId, IsActive)
+WHERE IsActive = TRUE;
+
+
+-- ---------------------------------------------------------------------
+-- 12) UserMilestones — Kullanıcı milestone başarıları
+-- ---------------------------------------------------------------------
+-- Kullanıcının hangi milestone'ları kazandığını takip eder.
+-- Aynı milestone'un tekrar verilmesini engeller.
+
+CREATE TABLE UserMilestones (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  MilestoneId UUID NOT NULL REFERENCES MilestoneRewards(Id) ON DELETE CASCADE,
+  AchievedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  RewardsGranted BOOLEAN NOT NULL DEFAULT TRUE,
+  PRIMARY KEY (UserId, MilestoneId)
+);
+
+CREATE INDEX IX_UserMilestones_User ON UserMilestones (UserId, AchievedAt DESC);
+CREATE INDEX IX_UserMilestones_Milestone ON UserMilestones (MilestoneId);
+
+
+-- ---------------------------------------------------------------------
+-- 13) PointTransactions — Puan hareket dökümü
+-- ---------------------------------------------------------------------
+-- Kullanıcıların puan kazanma ve kaybetme hareketlerini tutar (kaynak gerçek).
+-- Users.TotalPoints bu tablo üzerinden hesaplanır.
+
+CREATE TABLE PointTransactions (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  Amount BIGINT NOT NULL CHECK (Amount <> 0),
+  SourceType VARCHAR(50) NOT NULL,
+  SourceIdText TEXT,
+  IdempotencyKey TEXT NOT NULL,
+  Description TEXT,
+  Metadata JSONB,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER trg_pointtransactions_prevent_updates
+BEFORE UPDATE ON PointTransactions
+FOR EACH ROW EXECUTE PROCEDURE fn_prevent_updates();
+
+CREATE UNIQUE INDEX UX_PointTransactions_Idempotency
+ON PointTransactions (IdempotencyKey);
+
+CREATE INDEX IX_PointTransactions_User_CreatedAt
+ON PointTransactions (UserId, CreatedAt DESC);
+
+CREATE INDEX IX_PointTransactions_Source
+ON PointTransactions (SourceType, SourceIdText);
+
+
+-- ---------------------------------------------------------------------
+-- 14) LeagueRooms — Haftalık lig odaları
+-- ---------------------------------------------------------------------
+-- Her hafta için lig seviyelerine göre oluşturulan odaları tutar.
+-- Hafta penceresi: [Pazartesi 00:00 TR, sonraki Pazartesi 00:00 TR) (ISO week yaklaşımı).
+-- Finalize/Reset job'u: Pazartesi 00:05 TR gibi, hafta bittikten sonra çalıştırılır (23:59:59 sınır sorunlarını önler).
+
+CREATE TABLE LeagueRooms (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  WeekId VARCHAR(20) NOT NULL,
+  -- WeekId formatı kanonik olmalı: 2025-W03 gibi (aksi halde haftalık tekillik kuralları delinebilir)
+  CONSTRAINT CHK_LeagueRooms_WeekIdFormat
+    CHECK (WeekId ~ '^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$'),
+  Tier  VARCHAR(20) NOT NULL REFERENCES LeagueConfigs(TierName),
+  UserCount INT NOT NULL DEFAULT 0 CHECK (UserCount >= 0),
+  StartsAt TIMESTAMPTZ NOT NULL,
+  EndsAt   TIMESTAMPTZ NOT NULL,
+  CONSTRAINT CHK_LeagueRooms_TimeWindow CHECK (EndsAt > StartsAt),
+  IsProcessed BOOLEAN NOT NULL DEFAULT FALSE,
+  ProcessedAt TIMESTAMPTZ,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IX_LeagueRooms_Allocate ON LeagueRooms (WeekId, Tier, UserCount);
+CREATE INDEX IX_LeagueRooms_Unprocessed
+ON LeagueRooms (WeekId, Tier)
+WHERE IsProcessed = FALSE;
+CREATE UNIQUE INDEX UX_LeagueRooms_IdWeek ON LeagueRooms (Id, WeekId);
+
+
+-- ---------------------------------------------------------------------
+-- 15) LeagueMembers — Lig oda üyeliği
+-- ---------------------------------------------------------------------
+-- Kullanıcıların hangi lig odasında olduğunu ve o odadaki puanlarını tutar.
+
+CREATE TABLE LeagueMembers (
+  RoomId UUID NOT NULL,
+  WeekId VARCHAR(20) NOT NULL,
+  CONSTRAINT CHK_LeagueMembers_WeekIdFormat
+    CHECK (WeekId ~ '^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$'),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  PointsInRoom INT NOT NULL DEFAULT 0 CHECK (PointsInRoom >= 0),
+  RankSnapshot INT,
+  JoinedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (RoomId, UserId),
+  CONSTRAINT FK_LeagueMembers_RoomWeek
+    FOREIGN KEY (RoomId, WeekId)
+    REFERENCES LeagueRooms (Id, WeekId)
+    ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX UX_LeagueMembers_OneRoomPerWeek ON LeagueMembers (UserId, WeekId);
+CREATE INDEX IX_LeagueMembers_ByRoom ON LeagueMembers (RoomId);
+
+
+-- ---------------------------------------------------------------------
+-- 16) UserGoals — Kullanıcı kişisel hedefleri
+-- ---------------------------------------------------------------------
+-- Kullanıcıların kendi belirlediği kişisel sağlık hedeflerini tutar.
+
+CREATE TABLE UserGoals (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  Title VARCHAR(100) NOT NULL,
+  Description TEXT,
+  ActivityType VARCHAR(50),
+  TargetMetric VARCHAR(50) NOT NULL,
+  TargetValue INT NOT NULL CHECK (TargetValue > 0),
+  CurrentValue INT NOT NULL DEFAULT 0 CHECK (CurrentValue >= 0),
+  ValidUntil TIMESTAMPTZ NOT NULL,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CompletedAt TIMESTAMPTZ,
+  CONSTRAINT CHK_UserGoals_Completed
+    CHECK (CompletedAt IS NULL OR CurrentValue >= TargetValue)
+);
+
+CREATE INDEX IX_UserGoals_User_Active ON UserGoals (UserId, ValidUntil)
+WHERE CompletedAt IS NULL;
+
+CREATE INDEX IX_UserGoals_User_Completed ON UserGoals (UserId, CompletedAt DESC)
+WHERE CompletedAt IS NOT NULL;
+
+
+-- ---------------------------------------------------------------------
+-- 17) UserInterests — Kullanıcı ilgi alanları
+-- ---------------------------------------------------------------------
+-- Kullanıcıların hangi aktivite türlerine ilgi duyduğunu tutar.
+
+CREATE TABLE UserInterests (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  ActivityType VARCHAR(50) NOT NULL,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (UserId, ActivityType)
+);
+
+CREATE INDEX IX_UserInterests_User ON UserInterests (UserId);
+CREATE INDEX IX_UserInterests_Activity ON UserInterests (ActivityType);
+
+
+-- ---------------------------------------------------------------------
+-- 18) UserTitles — Kullanıcı ünvan sahipliği
+-- ---------------------------------------------------------------------
+-- Kullanıcıların kazandığı ünvanları tutar.
+
+CREATE TABLE UserTitles (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  TitleId VARCHAR(50) NOT NULL REFERENCES Titles(Id) ON DELETE CASCADE,
+  EarnedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (UserId, TitleId)
+);
+
+CREATE INDEX IX_UserTitles_User ON UserTitles (UserId);
+CREATE INDEX IX_UserTitles_Title ON UserTitles (TitleId);
+
+
+-- ---------------------------------------------------------------------
+-- 19) TaskTemplates — Görev şablonları
+-- ---------------------------------------------------------------------
+-- Kullanıcılara atanabilecek görev şablonlarını tutar.
+
+CREATE TABLE TaskTemplates (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  Title VARCHAR(100) NOT NULL,
+  Description TEXT,
+  Category VARCHAR(50),
+  ActivityType VARCHAR(50),
+  TargetMetric VARCHAR(50) NOT NULL,
+  TargetValue  INT NOT NULL CHECK (TargetValue > 0),
+  RewardPoints INT NOT NULL CHECK (RewardPoints > 0),
+  BadgeId VARCHAR(50) REFERENCES Badges(Id),
+  TitleId VARCHAR(50) REFERENCES Titles(Id),
+  IsActive BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+
+-- ---------------------------------------------------------------------
+-- 20) UserTasks — Kullanıcı görevleri
+-- ---------------------------------------------------------------------
+-- Kullanıcılara atanan görevleri ve ilerlemelerini tutar.
+-- Durumlar: ACTIVE -> COMPLETED (puan verilir) -> REWARD_CLAIMED (sadece UI/animasyon onayı) veya ACTIVE -> FAILED
+
+CREATE TABLE UserTasks (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  TemplateId UUID NOT NULL REFERENCES TaskTemplates(Id),
+  CurrentValue INT NOT NULL DEFAULT 0 CHECK (CurrentValue >= 0),
+  Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+    CHECK (Status IN ('ACTIVE','COMPLETED','REWARD_CLAIMED','FAILED')),
+  ValidUntil TIMESTAMPTZ NOT NULL,
+  AssignedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CompletedAt TIMESTAMPTZ,
+  RewardClaimedAt TIMESTAMPTZ,
+  FailedAt TIMESTAMPTZ,
+  CONSTRAINT CHK_UserTasks_CompletedAt
+    CHECK (Status <> 'COMPLETED' OR CompletedAt IS NOT NULL),
+  CONSTRAINT CHK_UserTasks_RewardClaimedAt
+    CHECK (Status <> 'REWARD_CLAIMED' OR RewardClaimedAt IS NOT NULL),
+  CONSTRAINT CHK_UserTasks_FailedAt
+    CHECK (Status <> 'FAILED' OR FailedAt IS NOT NULL),
+  CONSTRAINT CHK_UserTasks_RewardImpliesCompleted
+    CHECK (Status <> 'REWARD_CLAIMED' OR CompletedAt IS NOT NULL),
+  CONSTRAINT CHK_UserTasks_TimeWindow
+    CHECK (ValidUntil > AssignedAt),
+  CONSTRAINT CHK_UserTasks_MaxDuration7Days
+    CHECK (ValidUntil <= AssignedAt + INTERVAL '7 days')
+);
+
+CREATE INDEX IX_UserTasks_User_Status ON UserTasks (UserId, Status);
+CREATE INDEX IX_UserTasks_Active_ValidUntil
+ON UserTasks (UserId, ValidUntil)
+WHERE Status = 'ACTIVE';
+CREATE INDEX IX_UserTasks_Template ON UserTasks (TemplateId);
+
+-- UserTasks için status manipülasyonunu DB seviyesinde kilitle:
+-- - Hedefe ulaşmadan COMPLETED/REWARD_CLAIMED yapılamaz
+-- - UserId/TemplateId sonradan değiştirilemez (kayıt "taşınamaz")
+CREATE OR REPLACE FUNCTION fn_usertasks_guard_status()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_target_value INT;
+BEGIN
+  SELECT TargetValue INTO v_target_value
+  FROM TaskTemplates
+  WHERE Id = NEW.TemplateId;
+
+  IF v_target_value IS NULL THEN
+    RAISE EXCEPTION 'UserTasks: TaskTemplates not found. TemplateId=%', NEW.TemplateId
+    USING ERRCODE = 'foreign_key_violation';
+  END IF;
+
+  IF NEW.Status IN ('COMPLETED','REWARD_CLAIMED') AND NEW.CurrentValue < v_target_value THEN
+    RAISE EXCEPTION
+      'UserTasks: Status=% cannot be set while CurrentValue (%) < TargetValue (%)',
+      NEW.Status, NEW.CurrentValue, v_target_value
+    USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.UserId IS DISTINCT FROM OLD.UserId OR NEW.TemplateId IS DISTINCT FROM OLD.TemplateId THEN
+      RAISE EXCEPTION 'UserTasks: UserId/TemplateId cannot be changed after creation.'
+      USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_usertasks_guard_status
+BEFORE INSERT OR UPDATE OF Status, UserId, TemplateId ON UserTasks
+FOR EACH ROW EXECUTE PROCEDURE fn_usertasks_guard_status();
+
+
+-- ---------------------------------------------------------------------
+-- 21) Duels — İkili rekabet
+-- ---------------------------------------------------------------------
+-- Kullanıcılar arasındaki düello/yarışmaları tutar.
+-- Durumlar: WAITING -> ACTIVE -> FINISHED veya REJECTED/EXPIRED
+
+CREATE TABLE Duels (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  ChallengerId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  OpponentId   UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  CONSTRAINT CHK_Duels_NoSelf CHECK (ChallengerId <> OpponentId),
+  ActivityType VARCHAR(50) NOT NULL,
+  TargetMetric VARCHAR(50) NOT NULL,
+  TargetValue  INT NOT NULL CHECK (TargetValue > 0),
+  DurationDays INT NOT NULL CHECK (DurationDays BETWEEN 1 AND 7),
+  Status VARCHAR(20) NOT NULL DEFAULT 'WAITING'
+    CHECK (Status IN ('WAITING','ACTIVE','FINISHED','REJECTED','EXPIRED')),
+  ChallengerScore INT NOT NULL DEFAULT 0 CHECK (ChallengerScore >= 0),
+  OpponentScore   INT NOT NULL DEFAULT 0 CHECK (OpponentScore   >= 0),
+  Result VARCHAR(20)
+    CHECK (Result IN ('CHALLENGER_WIN','OPPONENT_WIN','BOTH_WIN','BOTH_LOSE')),
+  ChallengerLastPokeAt TIMESTAMPTZ,
+  OpponentLastPokeAt   TIMESTAMPTZ,
+  StartDate TIMESTAMPTZ,
+  EndDate   TIMESTAMPTZ,
+  CONSTRAINT CHK_Duels_TimeOrder
+    CHECK (StartDate IS NULL OR EndDate IS NULL OR EndDate > StartDate),
+  CONSTRAINT CHK_Duels_ActiveHasStart
+    CHECK (Status <> 'ACTIVE' OR StartDate IS NOT NULL),
+  CONSTRAINT CHK_Duels_FinishedHasStart
+    CHECK (Status <> 'FINISHED' OR StartDate IS NOT NULL),
+  CONSTRAINT CHK_Duels_ActiveHasEnd
+    CHECK (Status <> 'ACTIVE' OR EndDate IS NOT NULL),
+  CONSTRAINT CHK_Duels_WaitingHasNoDates
+    CHECK (Status <> 'WAITING'  OR (StartDate IS NULL AND EndDate IS NULL AND Result IS NULL)),
+  CONSTRAINT CHK_Duels_RejectedHasNoDates
+    CHECK (Status <> 'REJECTED' OR (StartDate IS NULL AND EndDate IS NULL AND Result IS NULL)),
+  CONSTRAINT CHK_Duels_ExpiredHasNoDates
+    CHECK (Status <> 'EXPIRED'  OR (StartDate IS NULL AND EndDate IS NULL AND Result IS NULL)),
+  CONSTRAINT CHK_Duels_ResultOnlyWhenFinished
+    CHECK (Result IS NULL OR Status = 'FINISHED'),
+  CONSTRAINT CHK_Duels_FinishedHasEndAndResult
+    CHECK (Status <> 'FINISHED' OR (EndDate IS NOT NULL AND Result IS NOT NULL)),
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX UX_Duels_SingleActivePerPair
+ON Duels (LEAST(ChallengerId, OpponentId), GREATEST(ChallengerId, OpponentId))
+WHERE Status IN ('WAITING','ACTIVE');
+
+CREATE INDEX IX_Duels_Expire_WaitingCreatedAt
+ON Duels (CreatedAt)
+WHERE Status = 'WAITING';
+
+CREATE INDEX IX_Duels_ActivityType ON Duels (ActivityType);
+
+
+-- ---------------------------------------------------------------------
+-- 22) WeeklyPartnerMissions — Haftalık ikili görev
+-- ---------------------------------------------------------------------
+-- Kullanıcıların arkadaşlarıyla birlikte tamamladığı haftalık ortak görevleri tutar.
+
+CREATE TABLE WeeklyPartnerMissions (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  WeekId VARCHAR(20) NOT NULL,
+  CONSTRAINT CHK_WPM_WeekIdFormat
+    CHECK (WeekId ~ '^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$'),
+  InitiatorId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  PartnerId   UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  CONSTRAINT CHK_WPM_NoSelf CHECK (InitiatorId <> PartnerId),
+  ActivityType VARCHAR(50),
+  TargetMetric VARCHAR(50) NOT NULL DEFAULT 'STEPS',
+  TargetValue INT NOT NULL DEFAULT 100000 CHECK (TargetValue > 0),
+  InitiatorProgress INT NOT NULL DEFAULT 0 CHECK (InitiatorProgress >= 0),
+  PartnerProgress   INT NOT NULL DEFAULT 0 CHECK (PartnerProgress   >= 0),
+  Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+    CHECK (Status IN ('ACTIVE','FINISHED','CANCELLED','EXPIRED')),
+  InitiatorLastPokeAt TIMESTAMPTZ,
+  PartnerLastPokeAt   TIMESTAMPTZ,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX UX_WPM_Pair_Once
+ON WeeklyPartnerMissions (WeekId, LEAST(InitiatorId, PartnerId), GREATEST(InitiatorId, PartnerId))
+WHERE Status IN ('ACTIVE','FINISHED');
+
+CREATE INDEX IX_WPM_ByWeek ON WeeklyPartnerMissions (WeekId);
+
+CREATE UNIQUE INDEX UX_WPM_IdWeek ON WeeklyPartnerMissions (Id, WeekId);
+
+
+-- ---------------------------------------------------------------------
+-- 23) WeeklyPartnerMissionSlots — Haftalık partner görev slotları
+-- ---------------------------------------------------------------------
+-- Bir kullanıcının aynı hafta yalnız 1 partner görevinde bulunmasını garanti eder.
+
+CREATE TABLE WeeklyPartnerMissionSlots (
+  WeekId   VARCHAR(20) NOT NULL,
+  CONSTRAINT CHK_WPMSlots_WeekIdFormat
+    CHECK (WeekId ~ '^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$'),
+  UserId   UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  MissionId UUID NOT NULL,
+  CONSTRAINT FK_WPMSlots_MissionWeek
+    FOREIGN KEY (MissionId, WeekId)
+    REFERENCES WeeklyPartnerMissions (Id, WeekId)
+    ON DELETE CASCADE,
+  CONSTRAINT UX_WPMSlots_WeekUser UNIQUE (WeekId, UserId)
+);
+
+CREATE INDEX IX_WPMSlots_Mission ON WeeklyPartnerMissionSlots (MissionId);
+
+
+-- ---------------------------------------------------------------------
+-- 24) GlobalMissions — Topluluk hedefi
+-- ---------------------------------------------------------------------
+-- Tüm kullanıcıların birlikte tamamlamaya çalıştığı global görevleri tutar.
+
+CREATE TABLE GlobalMissions (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  Title VARCHAR(100) NOT NULL,
+  ActivityType VARCHAR(50),
+  TargetMetric VARCHAR(50) NOT NULL DEFAULT 'STEPS',
+  TargetValue  BIGINT NOT NULL CHECK (TargetValue > 0),
+  CurrentValue BIGINT NOT NULL DEFAULT 0 CHECK (CurrentValue >= 0),
+  HiddenRewardPoints INT NOT NULL DEFAULT 0 CHECK (HiddenRewardPoints >= 0),
+  Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'
+    CHECK (Status IN ('DRAFT','ACTIVE','FINISHED','CANCELLED')),
+  StartDate TIMESTAMPTZ NOT NULL,
+  EndDate   TIMESTAMPTZ NOT NULL,
+  CONSTRAINT CHK_GlobalMissions_TimeWindow CHECK (EndDate > StartDate)
+);
+
+CREATE INDEX IX_GlobalMissions_Status_Dates 
+ON GlobalMissions (Status, StartDate, EndDate)
+WHERE Status IN ('ACTIVE', 'DRAFT');
+
+
+-- ---------------------------------------------------------------------
+-- 25) GlobalMissionContributions — Global görev katkıları
+-- ---------------------------------------------------------------------
+-- Kullanıcıların global görevlere yaptığı katkıları tutar (idempotent).
+
+CREATE TABLE GlobalMissionContributions (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  MissionId UUID NOT NULL REFERENCES GlobalMissions(Id) ON DELETE CASCADE,
+  UserId    UUID NOT NULL REFERENCES Users(Id)          ON DELETE CASCADE,
+  Amount BIGINT NOT NULL CHECK (Amount > 0),
+  IdempotencyKey TEXT NOT NULL,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (IdempotencyKey)
+);
+
+CREATE TRIGGER trg_globalmissioncontributions_prevent_updates
+BEFORE UPDATE ON GlobalMissionContributions
+FOR EACH ROW EXECUTE PROCEDURE fn_prevent_updates();
+
+CREATE INDEX IX_GlobalMissionContrib_MissionTime
+ON GlobalMissionContributions (MissionId, CreatedAt DESC);
+
+CREATE INDEX IX_GlobalMissionContrib_UserTime
+ON GlobalMissionContributions (UserId, CreatedAt DESC);
+
+
+-- ---------------------------------------------------------------------
+-- 26) GlobalMissionParticipants — Global görev katılımcıları
+-- ---------------------------------------------------------------------
+-- Kullanıcıların global görevlere katılımını ve toplam katkılarını tutar.
+
+CREATE TABLE GlobalMissionParticipants (
+  MissionId UUID NOT NULL REFERENCES GlobalMissions(Id) ON DELETE CASCADE,
+  UserId    UUID NOT NULL REFERENCES Users(Id)          ON DELETE CASCADE,
+  ContributionValue BIGINT NOT NULL DEFAULT 0 CHECK (ContributionValue >= 0),
+  IsRewardClaimed   BOOLEAN NOT NULL DEFAULT FALSE,
+  JoinedAt          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (MissionId, UserId)
+);
+
+CREATE INDEX IX_GlobalMissionParticipants_ByUser
+ON GlobalMissionParticipants (UserId);
+
+
+-- ---------------------------------------------------------------------
+-- 27) UserStreakFreezeLog — Dondurma hakkı kullanım geçmişi
+-- ---------------------------------------------------------------------
+-- Kullanıcının hangi günlerde dondurma hakkı kullandığını takip eder.
+-- Aynı gün iki kez kullanımı engeller.
+
+CREATE TABLE UserStreakFreezeLog (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  UsedDate DATE NOT NULL,
+  StreakCountAtTime INT NOT NULL CHECK (StreakCountAtTime >= 0),
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (UserId, UsedDate)
+);
+
+CREATE INDEX IX_UserStreakFreezeLog_User 
+ON UserStreakFreezeLog (UserId, UsedDate DESC);
+
+
+-- ---------------------------------------------------------------------
+-- 28) UserDailyStats — Kullanıcı günlük özetleri
+-- ---------------------------------------------------------------------
+-- Kullanıcıların günlük adım ve puan istatistiklerini tutar.
+
+CREATE TABLE UserDailyStats (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  LogDate DATE NOT NULL,
+  DailySteps  INT NOT NULL DEFAULT 0 CHECK (DailySteps  >= 0),
+  DailyPoints INT NOT NULL DEFAULT 0 CHECK (DailyPoints >= 0),
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (UserId, LogDate)
+);
+
+
+-- ---------------------------------------------------------------------
+-- 29) UserPointsHistory — Haftalık/aylık puan geçmişi
+-- ---------------------------------------------------------------------
+-- Kullanıcıların geçmiş dönemlerdeki puan ve sıralamalarını saklar.
+
+CREATE TABLE UserPointsHistory (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  PeriodType VARCHAR(10) NOT NULL CHECK (PeriodType IN ('WEEKLY','MONTHLY')),
+  PeriodId VARCHAR(20) NOT NULL,
+  Points INT NOT NULL CHECK (Points >= 0),
+  LeagueRank INT,
+  TierAtTime VARCHAR(20),
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (UserId, PeriodType, PeriodId)
+);
+
+CREATE INDEX IX_UserPointsHistory_User 
+ON UserPointsHistory (UserId, PeriodType, CreatedAt DESC);
+
+CREATE INDEX IX_UserPointsHistory_Period 
+ON UserPointsHistory (PeriodType, PeriodId);
+
+
+-- ---------------------------------------------------------------------
+-- 30) UserDevices — Kullanıcı cihazları
+-- ---------------------------------------------------------------------
+-- Kullanıcıların push bildirim almak için kaydettiği cihazlarını tutar.
+-- Push token stratejisi:
+-- - Varsayılan: Kullanıcının RevokedAt IS NULL olan tüm cihazlarına push gönderilir (multi-device).
+-- - Token geçersiz/expired dönerse backend ilgili DeviceToken'ı RevokedAt ile pasifleştirir.
+-- - LastActiveAt client tarafından güncellenir; istenirse ileride 'sadece son aktif cihaz' ayarı eklenebilir.
+
+CREATE TABLE UserDevices (
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  DeviceToken TEXT NOT NULL,
+  Platform VARCHAR(10) NOT NULL CHECK (Platform IN ('IOS','ANDROID','WEB')),
+  CreatedAt    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  LastActiveAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  RevokedAt    TIMESTAMPTZ,
+  PRIMARY KEY (UserId, DeviceToken)
+);
+
+CREATE UNIQUE INDEX UX_UserDevices_Token ON UserDevices (DeviceToken);
+CREATE INDEX IX_UserDevices_User_LastActive ON UserDevices (UserId, LastActiveAt DESC);
+
+
+-- ---------------------------------------------------------------------
+-- 31) Notifications — Bildirimler
+-- ---------------------------------------------------------------------
+-- Kullanıcılara gönderilen in-app bildirimleri tutar.
+
+CREATE TABLE Notifications (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  UserId UUID NOT NULL REFERENCES Users(Id) ON DELETE CASCADE,
+  Title VARCHAR(100),
+  Body  TEXT,
+  DeepLink VARCHAR(255),
+  Type VARCHAR(50) CHECK (Type IN (
+    'DUEL_REQUEST','DUEL_ACCEPTED','DUEL_REJECTED','DUEL_FINISHED',
+    'LEAGUE_CHANGE','PARTNER_MISSION','GLOBAL_MISSION',
+    'TASK_COMPLETED','GOAL_COMPLETED',
+    'STREAK_FROZEN','STREAK_LOST',
+    'FRIEND_ACTIVITY','SYSTEM'
+  )),
+  IsRead BOOLEAN NOT NULL DEFAULT FALSE,
+  ReadAt  TIMESTAMPTZ,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT CHK_Notifications_ReadAt
+    CHECK (
+      (IsRead = FALSE AND ReadAt IS NULL)
+      OR
+      (IsRead = TRUE  AND ReadAt IS NOT NULL)
+    )
+);
+
+CREATE INDEX IX_Notifications_Inbox
+ON Notifications (UserId, IsRead, CreatedAt DESC);
+
+CREATE UNIQUE INDEX UX_Notifications_IdUser ON Notifications (Id, UserId);
+
+
+-- ---------------------------------------------------------------------
+-- 32) NotificationDeliveries — Push gönderim kuyruğu
+-- ---------------------------------------------------------------------
+-- Bildirimlerin push kanalına gönderim durumunu takip eder.
+-- Gece saatlerinde gönderilecek bildirimler ScheduledAt ile kuyruğa alınır.
+
+CREATE TABLE NotificationDeliveries (
+  Id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  NotificationId UUID NOT NULL,
+  UserId UUID NOT NULL,
+  CONSTRAINT FK_NotificationDeliveries_NotificationUser
+    FOREIGN KEY (NotificationId, UserId)
+    REFERENCES Notifications (Id, UserId)
+    ON DELETE CASCADE,
+  Channel VARCHAR(20) NOT NULL DEFAULT 'PUSH' CHECK (Channel IN ('PUSH')),
+  Status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (Status IN ('PENDING','SENT','FAILED','CANCELLED')),
+  ScheduledAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  SentAt TIMESTAMPTZ,
+  AttemptCount INT NOT NULL DEFAULT 0 CHECK (AttemptCount >= 0),
+  LastError TEXT,
+  ProviderMessageId TEXT,
+  CreatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UpdatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT CHK_NotificationDeliveries_SentAt
+    CHECK (Status <> 'SENT' OR SentAt IS NOT NULL)
+);
+
+CREATE INDEX IX_NotificationDeliveries_Pending
+ON NotificationDeliveries (Status, ScheduledAt)
+WHERE Status = 'PENDING';
+
+CREATE INDEX IX_NotificationDeliveries_User
+ON NotificationDeliveries (UserId, CreatedAt DESC);
+
+CREATE INDEX IX_NotificationDeliveries_Notification
+ON NotificationDeliveries (NotificationId);
+

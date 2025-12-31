@@ -1,0 +1,1085 @@
+Proje Dokümanı — Sosyal + Gamification + League + Duels + Missions (Flutter + .NET + PostgreSQL)
+1) Projenin amacı ve kapsamı
+Bu proje; kullanıcıların daha düzenli hareket etmesini hedefleyen, sağlık verisini (özellikle adım) temel alan ve bunu oyunlaştırma + sosyal etkileşim ile motivasyona dönüştüren bir mobil uygulamadır.
+Uygulama; cihazlardan okunan sağlık verisini aşağıdaki mekaniklere dönüştürür:
+•	Kişisel hedefler (Goals) — sadece kullanıcı için, ödül/puan üretmez
+•	Admin görevleri (Tasks) — yönlendirici, ödül/puan üretir
+•	Haftalık lig sistemi (League) — rekabet, yükselme/düşme
+•	Dünya görevleri (Global Missions) — topluluk katılımı
+•	Haftalık ortak arkadaş görevi (Weekly Partner Mission) — ikili eşleşme
+•	Düello (Duels) — 1v1 yarış
+•	Sosyal sistem — takip (follow) ve karşılıklı takip = arkadaş (mutual)
+________________________________________
+2) Sistem bileşenleri
+2.1 Mobil uygulama (Flutter)
+•	Sağlık verisi, Flutter’daki Health paketi üzerinden Apple Health / Android sağlık kaynaklarından okunur.
+•	Uygulama; profil, lig, görevler, hedefler, düellolar, misyonlar, bildirimler gibi ekranları içerir.
+2.1.1 Ekran haritası (özet)
+- Home: günlük adım, streak, aktif görev/mission kartları
+- League: oda listesi + sıralama + promote/demote alanı + hafta kalan süre
+- Tasks: aktif görevler + tamamlananlar + "Topla" akışı + ilgi alanı seçme
+- Goals: hedef oluştur / aktif hedef / tamamlanan hedefler
+- Duels: istekler (WAITING) + aktif düellolar + sonuçlar
+- Global Missions: liste + katıl + katkı + top3 + ödül + geçmiş global görevler
+- Partner Mission: boşta arkadaş seçimi + aktif ortak görev + ilerleme + tamamlanmış partner görevleri
+- Profile:  başarılarım sayfası (rozetler/ünvanlar) + takip/follower + seri + toplam puan + güncel lig + arkadaşla son 1 haftalık puan kıyaslama grafiği + profil fotoğrafı
+- Notifications: inbox + temizle + okundu/okunmadı + tümünü gör
+
+2.1.2 Home ekranı (detay)
+Home iki modludur:
+
+Kısıtlı Home: Sağlık izni yoksa (3.2) sadece izin CTA'sı gösterilir.
+
+Tam Home: Sağlık izni varsa kartlar görünür.
+
+Üst bar:
+- Sağ üst zil ikonu: okunmamış bildirim sayısı kadar badge gösterir (Notifications.IsRead=false). "Temizle" toplu IsRead=true yapar.
+
+Kartlar (tam mod):
+- Seri kartı: StreakCount, bugünkü adım ilerlemesi (3000 hedef) + tıklayınca Seri Detayı modal. (6.4'e bakınız)
+- Görevler kartı: en yakın bitecek aktif görev + "kalan süre" (expire'a göre)
+- Hedefler kartı: en yakın bitecek aktif hedef + "kalan süre"
+- Lig durumun kartı: CurrentTier + odadaki sıralama + "hafta kalan süre"
+- Düello kartı: aktif düello varsa rakip + kazanıyor/kaybediyor durumu + kalan süre (birden fazla aktif düello varsa EndDate'i en yakın olan gösterilir)
+- Ortak görev kartı: aktif partner görevi varsa partner + ilerleme + kalan süre (tek aktif kayıt varsayılır)
+- Dünya görevi kartı: aktif dünya görevi varsa topluluk ilerlemesi + kalan süre (birden fazla aktif görev varsa EndDate'i en yakın olan gösterilir)
+
+Home kart seçim kuralı (özet):
+- Bir modülde birden fazla “aktif” kayıt olabilir (özellikle Düello, Global Missions).
+- Home, her modül için “bitişi en yakın olan” tek kaydı özet kart olarak gösterir.
+- Kart tıklanınca ilgili modül ekranına gidilir (tam liste/detay oradadır).
+
+Empty state kuralı (çok önemli):
+- İlgili modülde aktif kayıt yoksa kart:
+  - Ya gizlenir
+  - Ya "Başlat" CTA ile basit bir placeholder gösterir
+(MVP'de UX tercihine göre seçilir; dokümanda hangi yaklaşımın seçildiği belirtilir)
+
+2.2 Backend (.NET)
+•	İş kurallarını (puan, streak, lig finalize, görev dağıtımı, expire süreçleri, idempotency vb.) uygular.
+•	DB işlemlerini yürütür, bildirim kayıtlarını üretir, arka plan işleri çalıştırır.
+2.3 Arka plan süreçleri (Worker / job)
+•	Haftalık/günlük kontroller (streak, expire, lig finalize vb.) job/cron yaklaşımıyla yapılır.
+•	Bildirimler “kuyruk/schedule” mantığıyla gönderilir.
+2.4 Admin panel (Web)
+•	Admin panel bir web arayüzüdür.
+•	Zaman içinde yapılabilecek tüm yönetim işlemlerinin buraya eklenmesi hedeflenir (görev ekleme/düzenleme vb.).
+•	Frontend teknolojisi için “React kullanılabilir” şeklinde yaklaşım belirtilmiştir; kesin kurulum detayları bu dokümanda ayrıca belirtilmemiştir.
+2.5 Veritabanı (PostgreSQL)
+Sistem verisi PostgreSQL’de tutulur. Şema; lig, puan ledger, görevler, hedefler, misyonlar, düello, bildirim, rozet/ünvan/milestone gibi alanları kapsar.
+________________________________________
+3) Temel kurallar ve zaman standardı
+3.1 Onboarding / İlk Kurulum Akışı
+3.1.1 Giriş yöntemi seçimi
+KURAL:
+- Kullanıcı giriş yaparken şu yöntemlerden birini seçer: Google / Apple / E-posta
+- DB: AuthIdentities ile provider eşleme yapılır.
+
+MVP NOTU:
+- Kesin auth sağlayıcısı Firebase/Supabase olabilir (dokümanda açık).
+
+3.1.2 E-posta ile kayıt
+KURAL:
+- Şifre kuralları (min 8 karakter vb.) UI tarafında kontrol edilir.
+- Kullanım Şartları & Gizlilik onayı (checkbox) zorunludur.
+
+İLERİ NOT:
+- Onay bilgisini audit için saklamak istersen Users.Metadata'ya "consents" yazılabilir (MVP'de opsiyon).
+
+3.1.3 E-posta doğrulama
+KURAL:
+- E-posta doğrulama için 6 haneli kod gönderilir.
+- UI'da "Tekrar gönder" / "E-postayı değiştir" seçenekleri bulunur.
+
+MVP NOTU:
+- Token/OTP saklama auth provider tarafında yapılır (DB'ye koymak şart değil).
+
+3.1.4 Şifremi unuttum
+KURAL:
+- Reset link gönderimi yapılır.
+- Güvenlik: "Bu e-posta kayıtlıysa link gönderdik" mesajı gösterilir (enumeration önleme).
+
+3.1.5 Takma ad seçimi
+KURAL:
+- Username case-insensitive unique olmalıdır.
+- UI: uygunluk kontrolü, trim/boşluk kontrolü yapılır (DB check'leri de mevcuttur).
+
+3.1.6 Sağlık verisi izni
+KURAL:
+- Onboarding ekranında kullanıcıya "İzin ver" / "Şimdilik atla" seçenekleri sunulur.
+- "Şimdilik atla" seçilirse onboarding devam eder; kullanıcı uygulamayı kısıtlı modda kullanır (3.2).
+- İzin verildiğinde Users.HealthPermissionGranted = true ve HealthPermissionGrantedAt set edilir.
+
+3.1.7 Kişisel bilgi anketi (kişiselleştirme)
+KURAL:
+- Sorular: yaş/şehir/meslek/boy/kilo/aktivite seviyesi/ana hedef
+- Atlama yok, ama her soruda "Belirtmek istemiyorum" seçeneği var.
+- Saklama: Users.City (şehir) + kalan her şey Users.Metadata altında (MVP).
+- Profilde bu bilgiler görünmez, uygulamanın gelişmesi ve kişiselleşmesi içindir.
+
+3.1.8 Anket ödülü
+KURAL:
+- Anket akışı tamamlanınca kullanıcıya 1 adet Freeze verilir.
+- DB: Users.FreezeInventory++
+
+MVP NOTU:
+- Farm önleme: ödül tek sefer verilir (mümkünse milestone mantığıyla idempotent).
+
+3.1.9 Bakım Modu ve Zorunlu Güncelleme (System Configs)
+KURAL:
+- Uygulama açılışta (Splash Screen) backend'den sistem durumunu sorgular.
+- SystemConfigs tablosu üzerinden yönetilir.
+
+Bakım Modu (Maintenance):
+- Eğer Config:MAINTENANCE_MODE = TRUE ise kullanıcıya "Bakımdayız" ekranı gösterilir ve uygulamaya devam etmesi engellenir.
+
+Zorunlu Güncelleme (Force Update):
+- Backend Config:MIN_VERSION_{PLATFORM} değeri ile cihazdaki versiyon kıyaslanır.
+- Eğer AppVersion < MinVersion ise kullanıcı "Güncelleme Gerekli" ekranına yönlendirilir (Kapatılamaz modal).
+- "Mağazaya Git" butonu gösterilir (Config:FORCE_UPDATE_URL_{PLATFORM}).
+
+3.2 Sağlık izni zorunluluğu
+•	Kullanıcı sağlık izni vermezse uygulamanın ana işlevleri çalışmaz.
+•	Bu durumda kullanıcıya kısıtlı ana sayfa gösterilir: açıklama + "İzin ver" butonu. Buton ayarlara yönlendirir.
+•	DB'de bu izin durumu açıkça tutulur: Users.HealthPermissionGranted ve HealthPermissionGrantedAt.
+
+UI kararı (MVP):
+- Onboarding (3.1.6) ekranında "Şimdilik atla" vardır.
+- Kısıtlı Home ekranında "Şimdilik atla" yoktur; kullanıcı izin verene kadar kısıtlı modda kalır.
+
+Kısıtlı modda:
+- Ana sayfa yalnızca açıklama + İzin ver CTA'sı gösterir.
+- Diğer sekmeler (Görevler/Hedefler/Liderlik/Sosyal vb.) "izin gerekli" uyarısı verir veya disable görünür.
+- "İzin ver" butonu işletim sistemi izin ekranını / sistem ayarlarını açar (platforma göre).
+- İzin alınırsa Users.HealthPermissionGranted = true ve HealthPermissionGrantedAt set edilir.
+
+İzin sonradan iptal edilirse (edge case):
+- Kullanıcı işletim sistemi ayarlarından sağlık iznini kapatırsa uygulama tekrar kısıtlı moda düşer.
+- Bu durumda kullanıcı “kısıtlı home” ekranına yönlendirilir ve diğer modüller kapalı/uyarı modunda görünür.
+
+3.3 Türkiye saati (Europe/Istanbul)
+•	Bildirimlerde "gece göndermeme (DND)" Türkiye saatine göre çalışır.
+•	Haftalık kapanış ve benzeri zaman sınırlarında da Türkiye saati baz alınır.
+•	Hafta kapanış standardı:
+o	Hafta penceresi: [Pazartesi 00:00 TR, sonraki Pazartesi 00:00 TR) (ISO week yaklaşımı)
+o	Finalize/Reset job'u: Pazartesi 00:05 TR gibi, hafta bittikten sonra çalıştırılır (23:59:59 sınır sorunlarını önler)
+o	WeekId üretimi backend'de tek bir standart fonksiyonla yapılır; kaynak gerçek StartsAt/EndsAt'tır
+3.3.1 Gün standardı (TR bazlı)
+KURAL:
+- "Gün" sınırı Europe/Istanbul'a göre 00:00:00–23:59:59 aralığıdır.
+- Streak, günlük adım kontrolü, günlük puan üretimi, "bugün" kavramı ve günlük raporlar bu standarda göre çalışır.
+- Sistemsel tarihler cihazın lokal saatine göre değil, backend'in TR saat standardına göre değerlendirilir.
+
+MVP NOTU:
+- Kullanıcı seyahat ederse (timezone değişirse) "gün" sınırı yine TR'ye göre çalışır. Bu, hedef/streak mantığının "yer değiştirdikçe kaymaması" için tercih edilir.
+
+İLERİ NOT:
+- DND (quiet hours) için ileride "cihaz lokal saatine göre" opsiyonu eklenebilir. (Kullanıcı uyku saatini yerel saate göre yaşar.)
+
+3.3.2 DND (quiet hours) varsayılanı ve geceyi sarma kuralı
+KURAL:
+- Varsayılan DND aralığı: 00:00–09:00 (TR).
+- DND aralığı geceyi sarabilir. (Örn: 22:00–09:00 veya 00:00–09:00)
+
+"Uygunsuz saat" hesabı (geceyi sarma):
+- Eğer Start <= End ise: uygunsuz = [Start, End)
+- Eğer Start > End ise: uygunsuz = [Start, 24:00) ∪ [00:00, End)
+
+Örnekler:
+- DND 00:00–09:00 iken 02:30 → uygunsuz (push schedule edilir), 10:00 → uygun.
+- DND 22:00–09:00 iken 23:30 → uygunsuz, 08:30 → uygunsuz, 12:00 → uygun.
+
+MVP NOTU:
+- DND kullanıcı tarafından ayarlanabilir yapılmayabilir; ilk sürümde "tek varsayılan" ile çıkılabilir.
+
+3.4 Sağlık verisi güvenilirlik kuralı
+•	Sağlık verisi kabul/red kararı backend otoritesindedir.
+•	recordingMethod = MANUAL olan kayıtlar (manuel/user-entered) reddedilir.
+•	recordingMethod = UNKNOWN olan kayıtlar reddedilir.
+3.5 Health ingestion stratejisi (overwrite vs birikim)
+KURAL:
+- "Günlük adım toplamı" (DailySteps) veri kaynağından gün içinde tekrar tekrar gelebilir.
+  - Bu durumda UserDailyStats.DailySteps overwrite edilebilir (günün en güncel toplamı).
+- Haftalık pencerelerde (lig / partner görev / düello / misyon) ilerleme "kümülatif toplam" olarak tutulur.
+  - Örn: Pazartesi 10 dk basket + Çarşamba 20 dk basket → haftalık toplam 30 dk.
+
+MVP NOTU:
+- Çifte sayımı önlemek için mümkünse "pencere içindeki toplamı hesapla ve set et" yaklaşımı tercih edilir
+  (incremental add yapmak yerine).
+
+İLERİ NOT (multi-source / duplicate risk):
+- Android tarafında aynı metrik iki kaynaktan (telefon + saat) Health Connect'e düşebilir.
+- Gerekirse kullanıcıya "tek veri kaynağı seç" ayarı eklenebilir veya backend dedupe stratejisi uygulanır.
+
+________________________________________
+4) Veri modeli ve alanlar (domain haritası)
+Aşağıdaki başlıklar, hem sistem davranışını hem de DB’deki karşılığını birlikte anlatır.
+4.1 Kullanıcı (Users) ve kimlik eşleme (AuthIdentities)
+Users
+•	Profil: Username, Email, AvatarId, City, Bio
+o	AvatarId; uygulama içindeki statik avatar setine referanstır. Kullanıcı kendi fotoğrafını yükleyemez, sadece ikon/avatar seçer.
+o	MVP NOTU: Bio alanı DB'de tutulur ancak MVP'de UI'da gösterilmez/düzenlenmez.
+o	MVP NOTU: Kullanıcı adı (Username) kayıt sonrası değiştirilemez. İleride premium özellik olarak eklenebilir.
+•	Sosyal sayaçlar: FollowingCount, FollowersCount
+•	Oyun metrikleri/counter: TotalPoints, FreezeInventory, StreakCount, LastStreakDate, TotalTasksCompleted, TotalDuelsWon, TotalGlobalMissions
+•	League: CurrentTier
+•	Ünvan: SelectedTitleId
+•	Sağlık izni: HealthPermissionGranted, HealthPermissionGrantedAt
+•	Esnek alan: Metadata (UI tercihleri, deneysel özellikler vb.)
+•	Zaman: CreatedAt, UpdatedAt
+
+İLERİ NOT: Hesap silme özelliği MVP sonrası eklenecek (GDPR/KVKK uyumu için). DB'de CASCADE yapısı mevcut; aktif düello/partner görevi gibi edge case'ler ayrıca ele alınmalı.
+
+Profil sayfası (UI)
+•	Kendi profilinde kullanıcı; avatarını, şehrini ve seçili ünvanını yönetebilir.
+•	Bir başkasının profiline bakıldığında şu bilgiler görülebilir:
+o	Avatar + kullanıcı adı
+o	Seçili ünvan
+o	Günlük seri (streak)
+o	Toplam puan
+o	Aktif lig (CurrentTier)
+o	Takip et / takibi bırak butonu
+o	Takipçi / takip edilen sayıları
+o	İstatistik sayaçları: kaç görev tamamladı, kaç düello kazandı, kaç dünya görevine katıldı
+o	"Başarılar" sekmesinde kazandığı tüm rozetler ve tüm ünvanlar
+o	NOT: Partner görev sayısı gibi istatistikler profilde gösterilmez; bu veriler sadece milestone kontrolü için tutulur ve rozetlerden anlaşılır.
+Profil sayfası (UI) — Haftalık puan kıyas grafiği (Sen vs Kullanıcı)
+KURAL:
+- Bir başkasının profiline girildiğinde "Sen vs {Kullanıcı}" grafiği gösterilir.
+- Grafik periyodu: "Son 1 Haftalık Performans" (TR haftası) → 
+- X ekseni: Pzt, Sal, Çar, Per, Cum, Cmt, Paz. (örnek olarak, eğer o gün cuma ise bir önceki cumadan itibaren gösterecek.)
+- Y ekseni: Günlük kazanılan puan (DailyPoints).
+
+Veri kaynağı:
+- UserDailyStats (UserId, LogDate, DailyPoints).
+- Eksik günler 0 kabul edilerek çizilir.
+
+DailyPoints tanımı (netleştirme):
+- DailyPoints = ilgili TR gün penceresinde kullanıcının kazandığı **tüm puanların toplamıdır** (adım + görev ödülleri + lig ödülü + milestone + vb.).
+- Kaynağın (SourceType) önemi yoktur; grafik “toplam günlük puan”ı gösterir.
+
+Edge case:
+- Haftanın ilk günlerinde veri azsa grafik kısmi görünür.
+- Kullanıcının puan kazancı yoksa çizgi 0 seviyesinde gider.
+
+MVP NOTU:
+- Bu grafik "günlük puan" odaklıdır; claim ekranı sadece UI olduğu için puan akışı ledger'da zaten yazılmış sayılır.
+- İstenirse erişim kuralı ürün kararıdır: herkes görebilir veya yalnızca mutual (arkadaş) profillerde gösterilebilir.
+
+AuthIdentities
+•	Kullanıcının harici auth sağlayıcı kimliği ile eşlemesi:
+o	Provider (örnekler belirtilmiştir: SUPABASE/FIREBASE/APPLE/GOOGLE vb.)
+o	ProviderUserId
+•	Bu dokümanda kesin auth sağlayıcısı “Firebase veya Supabase olabilir” olarak belirtilmiştir.
+4.2 Ayarlar (UserSettings)
+•	Dil: Language (varsayılan tr-TR)
+•	Tema: Theme (LIGHT/DARK/SYSTEM)
+•	Birim: UnitSystem (METRIC/IMPERIAL)
+  o	MVP NOTU: Birim sistemi ayarı kullanıcıya gösterilmez; varsayılan METRIC uygulanır.
+•	Sağlık izni yönetimi: Ayarlar ekranından sağlık izni durumu görüntülenebilir ve sistem ayarlarına yönlendirme yapılabilir.
+•	Bildirim tercihleri:
+o	Tür bazlı: NotifyDuelRequests, NotifyLeagueChanges, NotifyFriendActivity, NotifyMissionUpdates
+o	Push: IsPushEnabled
+o	DND: DoNotDisturbEnabled, DoNotDisturbStart, DoNotDisturbEnd
+4.3 Sosyal sistem (Friendships)
+•	Model: “follow” ilişkisi.
+•	Takip isteği / onay / reddet yoktur.
+•	Mesajlaşma yoktur.
+•	Takipçi/takip edilen sayıları Users üzerinde FollowingCount/FollowersCount alanlarında cache’lenir.
+•	"Arkadaş" tanımı: karşılıklı takip (mutual).
+•	Not: Düello ve haftalık partner görevi için "arkadaşlık zorunluluğu" DB constraint'i ile değil, backend iş kuralı ile kontrol edilir (mutual friend kontrolü Friendships ilişkisi üzerinden yapılır).
+•	Takipten çıkınca:
+o	Sonraki hafta seni "partner görevi için" seçemez.
+o	Sana düello isteği gönderemez (mutual bozulur).
+o	Aktif düello veya aktif haftalık partner görevi varsa devam eder; sadece yeni eşleşme/düello başlatılamaz.
+
+4.3.1 Sosyal Ekranı (UI)
+-------------------------
+
+Sekmeler:
+- Arkadaşlar: Karşılıklı takip olanlar (mutual)
+- Takipçiler: Seni takip edenler
+- Takip Ettiklerin: Senin takip ettiklerin
+
+Kullanıcı Arama:
+- Ekranın üstünde arama alanı bulunur
+- Username ile arama yapılır
+- Arama sonuçlarında:
+  o	Avatar + Username gösterilir
+  o	Takip durumuna göre "Takip Et" / "Takibi Bırak" butonu
+
+Kişi Satırı:
+- Avatar + Username + Takip/Arkadaş durumu
+- Takip Et / Takibi Bırak butonu (state'e göre değişir)
+- Kullanıcı satırına tıklanınca profil sayfasına gidilir
+
+Boş Durum (Empty State):
+- "Henüz arkadaşın yok" mesajı
+- "Keşfet" veya arama CTA'sı
+
+4.3.2 Engelleme (Block)
+KURAL:
+- Kullanıcı başka bir kullanıcıyı profilinden veya listelerden engelleyebilir.
+- Engelleme durumu DB'de UserBlocks tablosunda tutulur.
+- Engellenen kişi:
+  - Engelleyeni aramalarda ve listelerde göremez.
+  - Engelleyene düello/partner isteği gönderemez.
+- Engelleme işlemi gerçekleştiğinde, backend varsa mevcut "takip" ve "mutual" ilişkilerini sessizce siler.
+
+4.4 Ortak ölçüm modeli: ActivityType / TargetMetric / TargetValue
+Hedefler, görevler, düellolar ve misyonlar aynı zihniyeti paylaşır:
+•	ActivityType: aktivite türü (koşu/yürüyüş/adım vb.)
+•	TargetMetric: ölçüm (örn. STEPS)
+•	TargetValue: hedef değer
+Bu ortak model; “tek bir sağlık verisi güncellemesi” ile birden fazla modülün ilerlemesinin güncellenebilmesini sağlar.
+________________________________________
+5) Puan sistemi (Leaderboards’un motoru)
+5.1 Sıralama türleri
+•	Haftalık lig sıralaması (en kritik olan)
+•	Aylık genel sıralama (ranking)
+•	Tüm zamanlar (overall) sıralaması
+Not: Haftalık/aylık sıralama puanları DB’de ayrı kolonlar olarak tutulmaz; PointTransactions üzerinden tarih aralığında SUM ile hesaplanır. Dönem kapanışları için UserPointsHistory (opsiyonel) kullanılabilir.
+
+KURAL (puanın kapsadığı kaynaklar):
+- Haftalık / aylık / tüm zamanlar sıralamalarında puan = ilgili zaman aralığında kazanılan **tüm** puanların toplamıdır.
+- Puan kaynağına (SourceType) göre filtreleme yapılmaz; nereden geldiğinin önemi yoktur.
+5.2 Günlük puan kazanma (adım üzerinden)
+•	Streak’in korunması için günlük 3000 adım şartı vardır.
+•	Puan kuralı:
+o	3000 adım: streak'i korur
+o	3000'den sonraki her 1000 adım için +1 puan
+o	Örnek: 4000 adım → 1 puan
+5.2.1 Puan formülü (matematiksel)
+KURAL:
+- Günlük adım puanı = max(0, floor((DailySteps - 3000) / 1000))
+- 3000 adım streak'i korur; puan üretimi 3000'den sonra başlar.
+
+Örnekler:
+- 3999 adım → 0 puan
+- 4000 adım → 1 puan
+- 6500 adım → 3 puan
+
+5.3 Puanların kayıt modeli (ledger)
+Puan, bir “bakiye tablosu” yerine ledger (hareket kaydı) ile tutulur:
+PointTransactions
+•	Amount (0 olamaz)
+•	SourceType, SourceIdText
+•	IdempotencyKey (unique)
+•	IdempotencyKey; aynı olayın iki kez işlenmesini engellemek için standart formatla üretilir:
+o	WPM_REWARD:{WeekId}:{UserId}
+o	GM_REWARD:{MissionId}:{UserId}
+o	LEAGUE_REWARD:{WeekId}:{UserId}
+o	MILESTONE:{MilestoneRewardId}:{UserId}
+•	Description, Metadata
+•	CreatedAt
+Bu yapı iki kritik şeyi garanti eder:
+1.	Puan geçmişi denetlenebilir (neden bu puan geldi?)
+2.	Aynı olay iki kez işlenirse idempotencyKey sayesinde ikinci yazım engellenir.
+5.3.1 STEPS (günlük adım puanı) idempotency standardı
+KURAL:
+- Günlük adım puanı günde "tek bir ledger olayı" olarak yazılır.
+- IdempotencyKey formatı:
+  STEPS_DAILY:{UserId}:{LogDate}
+  (LogDate = TR gününe göre YYYY-MM-DD)
+
+Davranış:
+- Aynı gün için adım verisi tekrar gelirse:
+  - UserDailyStats.DailySteps overwrite edilebilir (günün toplamı güncellenir).
+  - Günlük puan tekrar hesaplanır.
+  - Ledger yazımı idempotent olmalıdır:
+    - Eğer günün puanı değiştiyse, "fark kadar" yeni bir PointTransaction yazılır (delta yaklaşımı).
+    - Eğer puan değişmediyse, ledger'a yeni kayıt yazılmaz.
+
+MVP NOTU:
+- İlk sürümde "tam gün toplamını" backend hesaplayıp CurrentValue/Stats alanlarını set etmek daha güvenlidir (çifte sayım riskini azaltır).
+
+5.3.2 Puan Düzeltme (Correction) ve İade
+KURAL:
+- Ledger'da işlem silinmez (DELETE yok).
+- Hatalı bir işlem (bug vb.) varsa "Ters İşlem" (Compensating Transaction) yapılır.
+- PointTransactions tablosuna "Negatif Amount" içeren yeni bir kayıt atılır.
+- SourceType = 'SYSTEM_CORRECTION' veya 'ADMIN_PENALTY' kullanılır.
+- IdempotencyKey = CORRECTION:{HatalıIslemId} formatında olur.
+- Bu işlem kullanıcının TotalPoints değerini (trigger ile) otomatik düşürür.
+
+Users.TotalPoints
+•	Hızlı okuma için tutulur (ledger’dan türetilmiş bir toplam).
+5.4 Günlük özet ve dönem geçmişi (opsiyonel ama kritik)
+UserDailyStats
+•	Kullanıcının günlük adım ve günlük puan özetlerini tutar (günlük grafikler, geçmişe dönük analizler için).
+•	DailyPoints = ilgili TR günde kazanılan tüm puanların toplamıdır (SourceType filtrelenmez).
+UserPointsHistory
+•	Haftalık/aylık dönem kapanışlarında puan ve sıralama geçmişini saklar (history/snapshot).
+________________________________________
+6) Günlük seri (streak) ve “Dondurma Hakkı” (Freeze)
+6.1 Streak kuralı
+•	Kullanıcı bir gün 3000 adım atarsa streak korunur ve normal şartlarda artar.
+6.2 Freeze davranışı (otomatik kullanım)
+•	Freeze hakkı varsa ve kullanıcı o gün 3000 adımı tamamlamadıysa:
+o	Sistem otomatik freeze kullanır.
+o	Streak o gün sabit kalır (korunmuş sayılır ama büyümez).
+•	Freeze hakkı yoksa ve 3000 adım atılmadıysa:
+o	Streak sıfırlanır.
+Freeze envanteri Users üzerinde FreezeInventory ile tutulur.
+Freeze kullanımı loglanır: UserStreakFreezeLog (UserId, UsedDate).
+6.2.1 Freeze / Streak kaybı akışı (job ile)
+KURAL (TR günü kapanışı bazlı):
+- Gün sonunda (ör. 00:05 TR job):
+  1) Eğer DailySteps >= 3000:
+     - Streak korunur ve artar (normal akış).
+  2) Eğer DailySteps < 3000 ve FreezeInventory > 0:
+     - Freeze otomatik kullanılır (FreezeInventory -1)
+     - UserStreakFreezeLog'a UsedDate = o gün yazılır
+     - StreakCount sabit kalır (korunmuş sayılır)
+     - Bildirim: STREAK_FROZEN
+  3) Eğer DailySteps < 3000 ve FreezeInventory = 0:
+     - StreakCount sıfırlanır
+     - Bildirim: STREAK_LOST
+
+MVP NOTU:
+- STREAK_FROZEN / STREAK_LOST, motivasyon açısından kritik bildirimdir.
+
+6.3 Freeze kazanma modeli (Milestone tabanlı)
+Freeze; sadece “tek görev tamamla” gibi tek bir koşula bağlı değildir. Milestone kataloğu ile esnek kurgulanır:
+•	X görev tamamlayınca
+•	Çok sayıda hedef tamamlayınca (yüksek eşikler)
+•	Üst üste lig yükselince
+•	X düello kazanınca / üst üste kazanınca
+•	X ortak görev bitirince
+•	X dünya görevine katılınca/bitirince
+vb.
+Bu esneklik:
+•	MilestoneTypes + MilestoneRewards + UserMilestones ile yönetilir.
+6.4 Seri widget & Seri Detayı modal (UI)
+Home'daki seri kartına tıklanınca "Seri Detayı" modalı açılır:
+
+Gösterilen alanlar:
+- StreakCount (mevcut seri)
+- LongestStreakCount (en uzun seri)
+- Bugünkü DailySteps/3000 progress (UserDailyStats.DailySteps)
+- FreezeInventory (kalan dondurma hakkı)
+
+Kural listesi modalda gösterilir:
+- 3000 adım streak'i korur (+1 gün)
+- 3000 altı + Freeze varsa otomatik kullanılır (streak bozulmaz, artmaz)
+- 3000 sonrası her 1000 adım +1 puan
+
+
+________________________________________
+7) Kişisel hedefler (Goals)
+UserGoals
+•	Kullanıcı kendisi hedef oluşturur: başlık + aktivite/metrik/hedef + süre (ValidUntil)
+•	Puan kazandırmaz.
+•	Hedef ilerlemesi sağlık verisi ile güncellenir.
+•	Hedef tamamlanınca tamamlananlar bölümünde sadece görüntülenir.
+•	Süresi geçip tamamlanmayan hedefler sistemden kalkar (başarısız hedef tutulmaz).
+•	Kullanıcı hedefi silebilir; düzenleyemez.
+•	Hedef silme işlemi UI'da "emin misiniz?" onayı ile yapılır.
+
+Aktif hedef limiti (MVP): Kullanıcı aynı anda sınırsız sayıda hedef oluşturabilir.
+UI/performans için hedefler listesi sayfalama/limit ile çekilebilir (örn. 20'şer).
+
+7.4 Hedefler ekranı (UI)
+Amaç: "Aktif / Tamamlanmış" sekmeleri, hedef kartları, yeni hedef oluşturma ve detay modalını tanımlar.
+7.4.1 Sekmeler
+Ekranda 2 sekme var: Aktif hedefler / Tamamlanmış hedefler
+
+Aktif hedefler: CompletedAt IS NULL ve ValidUntil >= now() olan hedefler listelenir.
+Tamamlanmış hedefler: CompletedAt IS NOT NULL olan hedefler listelenir (kartta "Tamamlanma tarihi" gösterilir).
+
+DB bunu direkt destekliyor (CompletedAt + ValidUntil mantığı).
+7.4.2 Sıralama
+Ekrandaki sağ üst "sort" ikonunu dokümana bağla:
+
+Aktif hedeflerde varsayılan sıralama: ValidUntil ASC (süresi en yakın biten en üstte)
+Tamamlanmış hedeflerde varsayılan sıralama: CompletedAt DESC (en yeni tamamlanan en üstte)
+7.4.3 Hedef kartı alanları
+Başlık: UserGoals.Title
+Tür/ikon: ActivityType + TargetMetric
+Progress:
+- yüzde = floor(CurrentValue*100/TargetValue)
+- metin = CurrentValue / TargetValue (metric unit)
+Zaman:
+- Aktif: "Kalan süre" = ValidUntil - now()
+- Tamamlandı: "Tamamlanma tarihi" = CompletedAt
+
+Kart tıklanınca: Hedef Detayı modalı açılır.
+
+DB alanları birebir var.
+7.5 Yeni hedef oluşturma (UI akışı)
+Ekranda sağ altta FAB "+" var.
+7.5.1 Açılan modal alanları
+Modal: "Yeni Hedef Oluştur"
+- başlık - hedefin başlığı ne olmalı? kullanıcı girmeli
+- Spor dalı (dropdown) → ActivityType
+- Metrik (dropdown) → TargetMetric
+- Hedef miktarı (input) → TargetValue
+- Süre (gün) (input) → DurationDays (UI girişi)
+
+Başlık (Title) oluşturma:
+- Kullanıcı oluşturduğu hedefe başlık girmeli.
+- DB'de UserGoals.Title var; yani kullanıcı girişi veya otomatik üretim fark etmez, ikisi de direkt saklanır.
+7.5.2 Süre (gün) → backend dönüşümü
+AssignedAt = now()
+ValidUntil = now() + DurationDays ama bitiş saati 23:59 TR olacak şekilde normalize edilir.
+
+7.5.3 Başarılı oluşturma ekranı
+Hedef oluşturulunca kısa success modal gösterilir ve "Tamam" ile listeye dönülür.
+7.6 Hedef Detayı (modal)
+7.6.1 Modal alanları
+Başlık: hedef title
+Tür: adım/mesafe hedefi (ActivityType/TargetMetric)
+İlerleme: yüzde + CurrentValue/TargetValue
+Zaman bilgileri:
+- Başlangıç: CreatedAt
+- Bitiş: ValidUntil (23:59 gösterimi)
+- Aktifse ayrıca "Kalan süre" satırı
+7.6.2 Sil butonu kuralı
+Eğer hedef aktifse (CompletedAt IS NULL): modalda Sil butonu gösterilir.
+Eğer hedef tamamlandıysa (CompletedAt IS NOT NULL): modalda Sil butonu gösterilmez.
+7.7 Hedef silme (confirm)
+Kullanıcı "Sil"e basınca:
+- Confirm açılır: "Bu işlemin geri alınamaz" uyarısı
+- "Evet, sil" → hedef DB'den silinir
+
+Silme türü:
+MVP: hard delete (basit)
+İLERİ NOT: soft delete (DeletedAt) istenirse eklenebilir
+
+Şu anki DB şemasında DeletedAt yok; o yüzden hard delete daha tutarlı (MVP).
+
+________________________________________
+8) Admin görevleri (Tasks)
+8.1 Görev şablonları (TaskTemplates)
+Görevler admin tarafından tanımlanır:
+•	Title, Description
+•	Category (admin etiketi; MVP'de kullanıcı tarafında filtre/sort amacıyla kullanılmak zorunda değildir)
+•	ActivityType, TargetMetric, TargetValue
+•	RewardPoints
+•	Opsiyonel: BadgeId, TitleId
+•	IsActive
+8.2 Kullanıcı görevi (UserTasks)
+•	Kullanıcıya görev ataması; kullanıcının ilgi alanlarına göre yapılır (UserInterests).
+•	Sistem kullanıcıya periyodik (günlük) olarak yeni görevler atar/yeniler.
+•	İlgi alanı seçmezse genel görev gelir (adım/koşu/yürüyüş gibi).
+•	Kullanıcı görev üzerinde düzenleme / silme yapamaz.
+•	Süresi dolup tamamlanmayan (kaçırılan) görevler kullanıcı arayüzünde gösterilmez; DB’de FAILED olarak tutulur.
+UserTasks alanları
+•	CurrentValue, Status (ACTIVE/COMPLETED/REWARD_CLAIMED/FAILED)
+•	Zaman penceresi: AssignedAt, ValidUntil (maks 7 gün)
+•	Tamamlama: CompletedAt
+•	UI onayı: RewardClaimedAt
+•	Başarısızlık: FailedAt
+
+8.2.1 Görev atama kuralı (MVP) — limit + seçim + süre
+KURAL:
+- Aktif görev sayısı için bir limit yoktur.
+- Kullanıcı görevlerini bitirmeden de sistem yeni görevler atayabilir.
+- Görev seçimi: kullanıcının seçtiği ilgi alanlarından (UserInterests.ActivityType) rastgele görevler atanır; ilgi alanı yoksa "genel görev" atanır.
+- Süre kuralı (kritik): Atanan görev bir sonraki haftaya sarkmamalıdır.
+  - Hafta penceresi: [Pazartesi 00:00 TR, sonraki Pazartesi 00:00 TR)
+  - Görev atanırken ValidUntil, içinde bulunulan haftanın bitişini (Pazartesi 00:00 TR) geçmeyecek şekilde set edilir.
+  - Örnek: Pazartesi günü 1 haftalık görev gelebilir; Pazar günü en fazla 1 günlük görev gelebilir.
+8.3 Ödül ve “Topla” (Claim) davranışı
+•	Görev tamamlandığında puan hemen verilir (ledger’a yazılır).
+•	“Topla/claim” sadece kullanıcı deneyimidir:
+o	Kullanıcı “Topla” ekranını görüp onayladığında REWARD_CLAIMED işaretlenir.
+o	Puan tekrar verilmez.
+•	Kullanıcı "Topla"yı hiç yapmasa bile ödül boşa gitmez; sistem otomatik şekilde kullanıcı hanesine yansımış olur. (Claim ekranı kaçmış olur.)
+•	Claim ekranının açık kalmaması için; belirli hafta kapanışı sonrasında toplanmamış COMPLETED kayıtları otomatik REWARD_CLAIMED yapılabilir (puan tekrar verilmez).
+•	Auto-claim işlemi puan vermez, yalnızca UX state'ini kapatır; bu yüzden farm oluşturmaz.
+8.4 Görevden rozet/ünvan kazanımı (TaskTemplates üzerinden)
+•	TaskTemplates.BadgeId doluysa → görev tamamlanınca rozet verilir.
+•	TaskTemplates.TitleId doluysa → görev tamamlanınca ünvan verilir.
+•	Rozet/ünvan sahipliği UserBadges/UserTitles üzerinden tutulur; tekrarlanabilir/özel rozetler için UserBadgeAwards ile ayrıca geçmiş loglanabilir.
+•	Tekrar kazanım kuralı: Kullanıcı ilgili rozet/ünvana zaten sahipse tekrar bir kazanım verilmez (ödül/ekstra hak yoktur).
+8.5 Görevler ekranı (UI)
+Amaç: "Aktif / Tamamlanmış" sekmeleri, ilgi alanı filtresi ve görev kartlarının alanlarını tanımlar.
+8.5.1 Üst bar / bildirim rozeti
+- Sağ üstte bildirim ikonu badge sayısı: okunmamış bildirim adedi (Notifications.IsRead=false).
+- Bildirim temizleme davranışı (modal temizle vs) bildirim bölümüyle tutarlı olmalı.
+8.5.2 Sekmeler: Aktif görevler / Tamamlanmış görevler
+DB statülerine göre net eşleştirme:
+
+Aktif görevler sekmesi:
+- UserTasks.Status = ACTIVE olanlar listelenir.
+- (ÖNERİLEN) COMPLETED ama REWARD_CLAIMED değil olanlar da burada listelenir ve kart üzerinde "Topla" CTA görünür. Çünkü kullanıcı için "hala aksiyon var" hissi bu sekmede daha iyi.
+
+Tamamlanmış görevler sekmesi:
+- UserTasks.Status = REWARD_CLAIMED olanlar listelenir.
+- FAILED (süresi dolan/kaçırılan) görevler UI'da gösterilmez (bu karar dokümanda zaten var).
+
+Not: Bu eşleştirme DB ile tam uyumlu çünkü status akışı zaten ACTIVE→COMPLETED→REWARD_CLAIMED / ACTIVE→FAILED diye tanımlı.
+8.5.3 Sıralama kuralı (liste)
+Görevler sayfasında kullanıcıya "aciliyet" hissettirmek için şu sıralama kararı:
+
+Aktif listede öncelik: ValidUntil en yakın olan en üstte.
+Completed (claim bekleyen) listede: CompletedAt en yeni üstte.
+Claimed listede: RewardClaimedAt en yeni üstte.
+
+8.5.3.1 Sıralama (kullanıcı seçimi)
+- İstenirse kullanıcı bir "sort" seçeneği ile listeyi farklı şekilde sıralayabilir:
+  - Süreye göre: ValidUntil ASC (varsayılan öneri)
+  - İlerlemeye göre: Progress DESC (CurrentValue/TargetValue)
+8.5.4 İlgi alanları (Görevler ekranından düzenleme)
+- Görevler ekranındaki "Düzenle" butonu kullanıcıyı "İlgi Alanları Seçimi" ekranına götürür.
+- Kullanıcı 0..N ilgi alanı seçebilir.
+- Seçim kaydı UserInterests(UserId, ActivityType) olarak tutulur (PK: UserId+ActivityType).
+- İlgi alanı yoksa sistem "genel görev" atar (adım/yürüyüş/koşu gibi) — dokümanda var, burada UI ile bağlanır.
+
+MVP NOTU:
+- İlgi alanı değişikliği hemen görevleri değiştirmek zorunda değil:
+  - "Bir sonraki günlük görev atamasında etkiler." (en basit)
+
+8.5.5 Görev kartı (liste item)
+Başlık: TaskTemplates.Title
+Alt bilgi: görev tipi/ikon (ActivityType/TargetMetric'e göre)
+İlerleme: CurrentValue / TargetValue ve % = floor(CurrentValue*100/TargetValue)
+Kalan süre: ValidUntil - now (TR saati esas; gün sonu 23:59 gösterimi)
+Ödüller:
+- Puan: RewardPoints
+- Opsiyonel rozet: BadgeId
+- Opsiyonel ünvan: TitleId
+8.6 Görev Detayı (modal) + "Topla" davranışı
+8.6.1 Modal içeriği
+- Başlık: görev adı
+- Tür: adım/mesafe/süre (TargetMetric/ActivityType)
+- İlerleme: yüzde + CurrentValue/TargetValue
+- Zaman: AssignedAt, ValidUntil (bitiş 23:59 gösterimi)
+- Ödüller: +puan, rozet, ünvan
+8.6.2 Topla butonu kuralları
+- "Topla" butonu görev KARTININ üzerinde gösterilir (modal değil).
+- Eğer Status = ACTIVE: Topla butonu gizli, kart normal görünür.
+- Eğer Status = COMPLETED ve RewardClaimedAt is NULL:
+  - Kart üzerinde "Topla" butonu görünür.
+  - Butona basınca: animasyon + Status = REWARD_CLAIMED, RewardClaimedAt = now olur.
+  - Puan tekrar verilmez (zaten ledger'a yazılmıştır).
+- Eğer Status = REWARD_CLAIMED: Kart "Tamamlandı" bölümüne taşınır, Topla butonu gizlenir.
+
+
+________________________________________
+9) League sistemi (haftalık rekabet)
+9.1 Temel mantık
+•	League haftalık çalışır ve ana motivasyon motorudur.
+•	Kullanıcılar haftalık puanlarına göre sıralanır.
+•	Haftalık lig puanı: ilgili hafta penceresinde kazanılan tüm puanların toplamıdır (SourceType filtrelenmez).
+•	Kullanıcının mevcut ligi Users.CurrentTier alanında tutulur.
+•	Haftanın sonunda:
+o	Bazıları yükselir
+o	Bazıları düşer
+o	Bazıları aynı ligde kalır
+Yüzdeler (ör. %30 çıkar, %20 düşer gibi) ayarlanabilir.
+9.1.1 Promote/Demote kişi sayısı hesaplama (yuvarlama)
+KURAL:
+- promoteCount = ceil(RoomSize * PromotePercent)
+- demoteCount  = ceil(RoomSize * DemotePercent)
+- PromotePercent/DemotePercent > 0 ise, küçük odalarda "0 kişi" çıkmaması için ceil tercih edilir (kullanıcı dostu).
+
+Güvenlik kısıtları:
+- promoteCount + demoteCount <= RoomSize - 1 (en az 1 kişi aynı ligde kalmalı)
+- Eğer oda çok küçükse backend bu değerleri otomatik düşürür (ör. promote=1, demote=0 gibi).
+
+9.1.2 Eşit puan (tie-break) kuralı
+KURAL:
+- Aynı puana sahip kullanıcılar arasında sıralama "o puana ilk ulaşan daha üstte" olacak şekilde kırılır.
+- Yani 100 puana daha erken ulaşan, 100 puanı daha geç tamamlayan kişiden üstte görünür.
+
+MVP NOTU:
+- Bu bilgi ledger event'lerinden (PointTransactions.CreatedAt) türetilebilir.
+İLERİ NOT:
+- Performans ihtiyacı olursa "ReachedAt cache" gibi bir alan türetilebilir; şimdilik gerek yok.
+
+Lig sayısı:
+•	Şimdilik 7 lig planlanır (gerekirse 10'a kadar çıkarılabilir).
+9.2 League tabloları
+LeagueConfigs
+•	Tier bazında kurallar: tier sırası, yükselme/düşme yüzdeleri, MinRoomSize/MaxRoomSize (oda alt/üst sınırı) vb.
+LeagueRooms
+•	Haftalık oda: WeekId (örn. 2025-W03), Tier, StartsAt, EndsAt, IsProcessed, ProcessedAt
+•	WeekId kanonik formatta üretilir; haftalık pencere TR saatine göre hesaplanır.
+•	Oda kapasitesi (MaxRoomSize) DB seviyesinde korunur; oda doluyken yeni üye eklenemez.
+•	Haftalık finalize ve resetler “IsProcessed” ile kontrol edilerek idempotent yönetilir.
+LeagueMembers
+•	Oda üyeliği: RoomId, WeekId, UserId, PointsInRoom, RankSnapshot
+•	DB, aynı hafta bir kullanıcının tek odada olmasını garanti edecek şekilde kısıtlar içerir (farm riskini azaltır).
+9.3 Puan senkronizasyonu
+•	Haftalık oda puanları (PointsInRoom) backend job ile senkronize edilir.
+•	Room allocation; odaları mümkün olduğunca MinRoomSize–MaxRoomSize aralığında tutacak şekilde yapılır.
+•	Hafta kapanışında sıralama/puan geçmişi için UserPointsHistory'ye snapshot yazılabilir (opsiyonel).
+9.4 Room allocation algoritması (MinRoomSize–MaxRoomSize + leftover)
+KURAL:
+- Amaç: Odaları mümkün olduğunca [MinRoomSize, MaxRoomSize] aralığında tutmak.
+
+Leftover politikası:
+- Eğer kalan kullanıcı sayısı (leftover) < MinRoomSize ise:
+  - Varsayılan: leftover kullanıcılar mevcut odalara 1'er 1'er dağıtılır (oda boyutu MaxRoomSize'ı aşmıyorsa).
+  - Eğer dağıtım MaxRoomSize'ı zorluyorsa:
+    - Üst liglerde (boşluk varsa) MinRoomSize eşikleri daha düşük tutulabilir (hatta 0'a yakın).
+    - Bu sayede "oda açılamadı" problemi yaşamayız.
+
+MVP NOTU:
+- Tier bazlı esneklik: Üst tier'lerde kullanıcı azsa MinRoomSize düşük olabilir.
+
+9.5 Liderlik Ekranı (UI)
+-------------------------
+
+9.5.1 Sekmeler
+- Haftalık Lig: Kullanıcının mevcut lig odasındaki sıralaması
+- Aylık Sıralama: O ayki toplam puanlarla sıralama
+- Tüm Zamanlar: Genel sıralama (overall)
+
+9.5.2 Sıralama limitleri
+- Aylık sıralama: İlk 50 kişi gösterilir
+- Tüm zamanlar: İlk 100 kişi gösterilir
+- Kullanıcı bu sınırlar dışındaysa kendi sırası ayrı bir satırda (sabitlenmiş) gösterilir
+
+9.5.3 Haftalık lig renk kodlaması
+- Yeşil arka plan: Yükselme bölgesi (üst %X - LeagueConfigs.PromotePercent)
+- Kırmızı arka plan: Düşme bölgesi (alt %X - LeagueConfigs.DemotePercent)
+- Beyaz/gri: Aynı ligde kalma bölgesi
+
+9.5.4 Hafta sonu sonuç ekranı
+- MVP'de özel animasyon veya sonuç ekranı yok.
+- Kullanıcı yeni haftada uygulamaya girdiğinde güncel tier'ını normal şekilde görür.
+
+________________________________________
+10) Dünya görevleri (Global Missions)
+10.1 Temel mantık
+•	Admin tarafından “farkındalık/etkinlik” amacıyla açılır.
+•	Süresi admin tarafından belirlenir (haftalık veya daha uzun olabilir).
+•	Otomatik katılım yoktur:
+o	Kullanıcı sosyal merkezde “dünya görevleri” bölümünden görevi görür ve katılır.
+•	Bildirimle haberdar edilebilir.
+10.2 Katkı, görünürlük ve ödül
+•	Katkı yapanların skorları görünür.
+•	“Top 3” görünür; kullanıcı kendi katkısını görür.
+•	Katılım ödülü "katıldığı anda" değil, görev bittiğinde değerlendirilir.
+•	Katılım/kazanım tarafında katkı değeri 0 olmamalıdır: en az 1+ katkı şartı uygulanır.
+•	Top 3 için puan dışı ödüller (rozet/ünvan/freeze hakkı) verilebilir.
+10.2.1 Ödül dağıtımı (eşit katılım ödülü + Top3 ekstra)
+KURAL:
+- Katılım şartı: ContributionValue > 0 (en az 1+ katkı).
+- Görev bitince, katkı yapan her kullanıcıya "eşit" katılım ödülü verilir (puan veya sürpriz ödül admin kararına bağlı olabilir).
+- Top3 (en çok katkı veren ilk 3 kişi) ayrıca ekstra ödül alabilir:
+  - rozet / ünvan / freeze hakkı gibi (puan şart değil).
+
+Top3 tie-break:
+- Eşit katkı varsa "o katkı seviyesine daha önce ulaşan" daha üstte görünür.
+- UI'da ayrıca "toplam katkı içindeki pay (%)" gösterilebilir (bilgilendirici).
+
+10.3 Global misyon tabloları
+•	GlobalMissions: hedef, süre, durum, current/target, gizli ödül puanı
+•	GlobalMissionParticipants: katılım ve toplam katkı
+o	IsRewardClaimed (MVP anlamı): Global mission tarafında görevler gibi ayrı bir "Topla/claim" UX'i yoktur.
+  - Bu alan pratikte “ödül dağıtıldı mı?” bilgisini tutar.
+  - Görev bittiğinde ve kullanıcı ContributionValue > 0 ise ödül(ler) verilir; aynı ödülün ikinci kez verilmemesi için bu alan TRUE yapılır.
+•	GlobalMissionContributions: katkı hareketleri (Amount > 0, idempotencyKey unique)
+________________________________________
+11) Haftalık ortak arkadaş görevi (Weekly Partner Mission)
+11.1 Temel mantık
+•	Haftalık bir “iki arkadaşın birlikte” yaptığı sistemdir.
+•	Her hafta başlangıcında o haftanın ortak görevi belirlenir.
+•	Eşleşme tek taraflı başlar; karşı tarafa “kabul ediyor musun?” sorusu yoktur.
+•	Görev haftalık pencereye bağlıdır; hafta pazar gecesi kapanır. Bu nedenle görevi ne kadar geç başlatırsan kalan süre o kadar kısalır.
+•	Not: Partner görevi yalnızca arkadaş (mutual) ile başlatılır; bu kontrol DB constraint’i değil backend iş kuralıdır.
+•	Kullanıcı uygulamaya girer:
+o	Eğer kimse onu seçmediyse, arkadaş listesinden "boşta olan" bir arkadaşını seçer.
+o	Seçtiği an onaylar ve görev başlar.
+11.1.1 Aynı anda seçim yarışı (race condition)
+KURAL:
+- A, B'yi seçerken aynı anda B başka biriyle eşleşmiş olabilir.
+- Bu durumda backend "B artık boşta değil" hatası döner.
+UI davranışı:
+- A'ya kısa hata mesajı gösterilir ("Bu arkadaş az önce eşleşti, başka birini seç.").
+- Liste yenilendiğinde B listeden çıkar (boşta değil).
+
+MVP NOTU:
+- Bu durum nadirdir ama mutlaka handle edilmelidir (eşleşme anı atomik olmalı).
+
+11.2 Kısıtlar (farm önlemleri)
+•	Aynı kullanıcı aynı hafta birden fazla eşleşme ile ödül kasamaz.
+•	Bu kural DB seviyesinde slot yaklaşımı ile korunur:
+o	WeeklyPartnerMissionSlots tablosu (WeekId, UserId) için UNIQUE kısıt taşır.
+11.3 Status yönetimi ve boşa düşme (leftover) davranışı
+•	Status: ACTIVE / FINISHED / CANCELLED / EXPIRED
+o	ACTIVE: görev devam ediyor
+o	FINISHED: görev tamamlandı (hedefe ulaşıldı)
+o	CANCELLED: görev iptal edildi (eşleştiği kişi hesabını sildi, sistem hatası vb.)
+o	EXPIRED: görev süresi doldu ve tamamlanamadı
+•	CANCELLED durumunda:
+o	Slot serbest kalır; kullanıcı aynı hafta içinde yeniden eşleşebilir (mağduriyet önleme).
+o	Ancak ikinci kez ödül yazılması PointTransactions.IdempotencyKey (WPM_REWARD:{WeekId}:{UserId}) ile engellenir (farm önleme).
+•	EXPIRED durumunda:
+o	Bu durum genellikle “haftalık pencere bitti ve görev tamamlanamadı” anlamına gelir.
+o	Slot teknik olarak serbest kalır (temizlik/cleanup); yeni eşleşme pratikte ancak sonraki hafta başlatılır.
+•	Normal davranış: haftada 1 kere eşleşti, bitti.
+•	Uç durumda (eşleştiği kişi hesabını silerse vb.) mağduriyet olmasın diye:
+o	Kullanıcı "boşa düşmüş" kabul edilir ve kontrollü şekilde yeniden eşleşme mümkün kılınır.
+o	Bu davranış backend'de farm'a izin vermeyecek şekilde yönetilir.
+11.3.1 CANCELLED sonrası yeniden eşleşme + ödül sınırı
+KURAL:
+- CANCELLED olursa slot serbest kalır; kullanıcı aynı hafta yeniden eşleşebilir (mağduriyet önleme).
+- Ancak "haftalık partner görevi ödülü" kullanıcı başına haftada en fazla 1 defa yazılabilir.
+
+Farm önleme / net kural:
+- Eğer kullanıcı o hafta ödülü aldıysa (ledger'a yazıldıysa) → aynı hafta tekrar ödül alamaz.
+- Eğer kullanıcı o hafta hiç ödül almadıysa (tamamlanmadı / iptal oldu) → aynı hafta tekrar deneyebilir.
+
+11.3.2 Dürtme (Poke) — günde 1 hak
+KURAL:
+- Weekly Partner Mission ACTIVE iken kullanıcı partnerini "dürtebilir".
+- Her kullanıcı için dürtme hakkı TR gününe göre günde en fazla 1 defadır.
+  (Gün = Europe/Istanbul 00:00–23:59)
+
+DB:
+- WeeklyPartnerMissions.InitiatorLastPokeAt
+- WeeklyPartnerMissions.PartnerLastPokeAt
+
+API/UI davranışı:
+- Dürtme yapınca:
+  - ilgili LastPokeAt güncellenir
+  - partner'a in-app bildirim üretilir, push açıksa push gönderilir (DND varsa schedule edilir)
+  - UI: "Partnerin dürtüldü" feedback'i
+
+MVP NOTU:
+- Dürtme ödül/puan üretmez; sadece motivasyon/hatırlatma amaçlıdır.
+
+11.4 Tablolar
+•	WeeklyPartnerMissions: eşleşme, progress, status
+•	WeeklyPartnerMissionSlots: haftalık tek slot kısıtı
+
+İlerleme kuralı:
+- Toplam ilerleme = InitiatorProgress + PartnerProgress
+- Tamamlanma koşulu: (InitiatorProgress + PartnerProgress) >= TargetValue
+UI gösterimi:
+- Hem kişi bazlı ilerleme (iki bar) hem de toplam ilerleme (tek bar / toplam sayı) gösterilir.
+________________________________________
+12) Düello sistemi (Duels) — 1v1 yarış
+12.1 Başlatma ve kısıtlar
+•	Düello sadece “arkadaş” (mutual) ile yapılır (bu kontrol DB constraint’i değil, backend iş kuralıdır).
+•	Aynı iki kişi arasında aynı anda:
+o	Tek WAITING/ACTIVE düello olabilir (DB’de partial unique index ile korunur).
+•	Kullanıcı aynı anda birden fazla farklı kişiyle düello yapabilir.
+12.2 Süre ve durumlar
+Duels
+•	DurationDays (1–7 gün)
+•	Status: WAITING / ACTIVE / FINISHED / REJECTED / EXPIRED
+•	WAITING istekleri 24 saat içinde cevaplanmazsa EXPIRED olur (bu kontrol backend job ile yapılır).
+•	EXPIRED durumu sadece WAITING istekleri için geçerlidir; başka bir durumda EXPIRED olamaz (DB constraint ile garanti edilir).
+•	ACTIVE başladıktan sonra düello iptal edilemez. (Geride olanın haksız avantaj elde etmesini engellemek için.)
+•	Bu yüzden düello süresi maksimum 7 gün ile sınırlandırılır.
+•	FINISHED olduğunda:
+o	EndDate ve Result zorunludur (DB check constraint).
+Result
+•	CHALLENGER_WIN / OPPONENT_WIN / BOTH_WIN / BOTH_LOSE
+•	Result seçimi:
+o	İki taraf da hiç ilerlemezse (ikisi de %0) → BOTH_LOSE
+o	İlerleme varsa ve eşitse → BOTH_WIN (beraberlik ayrı bir sonuç değildir)
+o	İlerleme farklıysa → önde olan taraf kazanır (CHALLENGER_WIN / OPPONENT_WIN)
+12.2.1 Düello puan üretmez, erken bitebilir
+KURAL:
+- Düello asla puan vermez.
+- Düello yalnızca rekabet/başarı (rozet/ünvan/milestone) üretir.
+
+Erken bitiş:
+- Bir taraf TargetValue hedefine ulaştığı anda düello FINISHED olur (süre dolmasını beklemez).
+- Tek kazanan senaryosu: hedefe diğerinden önce ulaşan taraf kazanır.
+- Eşitlik senaryosu: Eğer iki taraf hedefe aynı anda ulaştıysa (timestamp/tespit eşit veya ayırt edilemezse) Result = BOTH_WIN olarak kapanır.
+- Eğer süre sonunda kimse hedefe ulaşmadıysa:
+  - Skorlar karşılaştırılır; önde olan kazanır.
+  - İlerleme eşitse:
+    - %0 / %0 ise BOTH_LOSE
+    - İlerleme var ve eşitse BOTH_WIN
+
+Beraberlik (Draw) ve Farm Riski:
+- BOTH_WIN durumu UI'da "Dostluk Kazandı" veya "Berabere" olarak gösterilir.
+- Milestone sayacı (DUELS_WON) artırılmaz. Bu, arkadaşlar arasındaki "anlaşmalı beraberlik" (win-trading) ile haksız başarı kazanımını engeller.
+
+MVP NOTU:
+- "İlk ulaşan" bilgisi güvenilir şekilde ölçülebiliyorsa kullanılabilir; aksi durumda eşitlik BOTH_WIN kabul edilir.
+
+12.3 Skor ve etkileşim
+•	ChallengerScore, OpponentScore
+•	"poke" alanları: ChallengerLastPokeAt, OpponentLastPokeAt (rekabet etkileşimi için)
+12.3.1 Dürtme (Poke) — günde 1 hak
+KURAL:
+- Düello ACTIVE iken kullanıcı, rakibini "dürtebilir".
+- Her kullanıcı için dürtme hakkı TR gününe göre günde en fazla 1 defadır.
+  (Gün = Europe/Istanbul 00:00–23:59)
+
+DB:
+- Duels.ChallengerLastPokeAt / Duels.OpponentLastPokeAt alanları son dürtme zamanını tutar.
+
+API/UI davranışı:
+- Kullanıcı "dürt" butonuna basınca:
+  - Eğer bugün daha önce dürtmediyse:
+    - LastPokeAt güncellenir
+    - Rakibe in-app bildirim üretilir, push açıksa push gönderilir (DND varsa schedule edilir).
+    - UI: "Dürtüldü" feedback'i gösterilir.
+  - Eğer bugün zaten dürttüyse:
+    - Buton disable olur veya "Yarın tekrar dürtebilirsin" mesajı gösterilir.
+
+MVP NOTU:
+- Dürtme puan/ödül üretmez; sadece sosyal/rekabet etkileşimidir.
+
+________________________________________
+13) Bildirim sistemi: in-app + push + DND kuyruğu
+13.1 In-app bildirim kutusu
+•	Her kullanıcı için bildirim geçmişi tutulur.
+•	Okundu/okunmadı ve okunmamış sayacı desteklenir.
+•	Kullanıcı isterse bildirimleri silebilme/temizleyebilme aksiyonlarına sahiptir.
+Notifications
+•	Title, Body, DeepLink
+•	Type (tam enum listesi):
+o	DUEL_REQUEST, DUEL_ACCEPTED, DUEL_REJECTED, DUEL_FINISHED
+o	LEAGUE_CHANGE
+o	PARTNER_MISSION
+o	GLOBAL_MISSION
+o	TASK_COMPLETED
+o	GOAL_COMPLETED
+o	STREAK_FROZEN, STREAK_LOST
+o	FRIEND_ACTIVITY
+o	SYSTEM
+•	STREAK_FROZEN ve STREAK_LOST bildirimleri, kullanıcının seri motivasyonu için kritik bildirimlerdir.
+•	IsRead, ReadAt
+
+Not (DUEL_POKE konusu):
+- Şu an DB şemasındaki Notifications.Type listesinde ayrı bir DUEL_POKE enum'u yoktur.
+- Düello/partner "dürtme" bildirimleri MVP'de mevcut enum'lar altında (örn. PARTNER_MISSION veya SYSTEM) loglanabilir; ileride gerekirse DUEL_POKE eklenerek ayrıştırılabilir.
+13.1.1 Bildirim saklama / temizleme politikası
+KURAL (MVP):
+- "Temizle" aksiyonu: bildirimleri DB'den silmez, topluca IsRead=true yapar (inbox badge temizlenir).
+- Bildirim geçmişi kullanıcı tarafından istenirse geriye dönük görüntülenebilir.
+
+İLERİ NOT:
+- Opsiyonel TTL: 90 gün sonra otomatik arşiv/temizlik uygulanabilir.
+- Gerçek "Sil" özelliği eklenecekse: ya hard-delete (DB'den sil) ya da soft-delete (DeletedAt) kararı ayrıca verilir.
+
+13.1.2 DeepLink standardı (route örnekleri)
+KURAL:
+- Notifications.DeepLink alanı uygulama içi route/path formatında tutulur (örn: /duels/{duelId}).
+- Örnek eşleştirmeler (Type → DeepLink):
+  - DUEL_REQUEST → /duels/{duelId}
+  - DUEL_ACCEPTED → /duels/{duelId}
+  - DUEL_REJECTED → /duels
+  - DUEL_FINISHED → /duels/{duelId}
+  - LEAGUE_CHANGE → /league
+  - PARTNER_MISSION → /partner-mission
+  - GLOBAL_MISSION → /global-missions/{missionId}
+  - TASK_COMPLETED → /tasks
+  - GOAL_COMPLETED → /goals
+  - STREAK_FROZEN → /home (streak detayı)
+  - STREAK_LOST → /home (streak detayı)
+  - FRIEND_ACTIVITY → /profile/{userId}
+  - SYSTEM → /notifications
+
+13.2 Push gönderimi ve DND (quiet hours)
+•	Push bildirim aç/kapat: UserSettings.IsPushEnabled
+•	DND açıksa ve saat aralığı uygunsuzsa:
+o	Push hemen gönderilmez
+o	Gönderim zamanı sabaha ötelenir (schedule)
+•	Bu karar, bildirim oluşturulurken verilir.
+NotificationDeliveries
+•	Status: PENDING / SENT / FAILED / CANCELLED
+•	ScheduledAt, SentAt
+•	AttemptCount, LastError, ProviderMessageId
+•	NotificationDeliveries, push gönderimi için “outbox/kuyruk” kaydıdır:
+o	Bildirim üretildiğinde ilgili kullanıcı için delivery kaydı açılır.
+o	Worker, ScheduledAt zamanı gelmiş PENDING kayıtları gönderir.
+o	Başarılı gönderimde Status=SENT ve SentAt set edilir.
+o	Hata durumunda AttemptCount artırılır, LastError yazılır; uygun görülürse ScheduledAt ileri ötelenerek tekrar denenir ve belirli denemeden sonra FAILED’e alınır.
+13.3 Cihaz token yönetimi
+UserDevices
+•	(UserId, DeviceToken) primary key
+•	Platform: IOS / ANDROID / WEB
+•	LastActiveAt, RevokedAt
+Push token stratejisi (özet)
+•	Varsayılan yaklaşım: Kullanıcının RevokedAt IS NULL olan tüm cihazlarına push gönderilir (multi-device).
+•	Token geçersiz/expired dönerse ilgili DeviceToken RevokedAt ile pasifleştirilir.
+•	LastActiveAt client tarafından güncellenir; ileride “sadece son aktif cihaza gönder” gibi bir seçenek eklenebilir.
+________________________________________
+14) Rozetler, ünvanlar ve milestone sistemi
+14.1 Rozetler (Badges)
+•	Badge kataloğu vardır.
+•	Rozet kazanımı; görev ödülleri (TaskTemplates.BadgeId) veya milestone ödülleri üzerinden olabilir.
+•	Kullanıcı rozet sahipliği UserBadges’ta tutulur (tek seferlik/kalıcı sahiplik).
+•	Tekrarlanabilir/özel ödüller için award geçmişi UserBadgeAwards ile ayrıca tutulabilir.
+14.2 Ünvanlar (Titles)
+•	Ünvan kataloğu vardır.
+•	Ünvan kazanımı; görev ödülleri (TaskTemplates.TitleId) veya milestone ödülleri üzerinden olabilir.
+•	Kullanıcı ünvan sahipliği UserTitles’ta tutulur.
+•	Kullanıcı birden fazla ünvan kazanabilir; profilde 1 tanesini seçili yapar.
+•	Profilde seçili ünvan Users.SelectedTitleId ile tutulur.
+14.3 Milestone kataloğu (esnek başarı sistemi)
+•	MilestoneTypes: başarı türleri (kod, ad, açıklama)
+•	MilestoneRewards: eşik bazlı ödüller (badge/title/freezeReward)
+•	UserMilestones: kullanıcının kazandığı milestone kayıtları
+Bu yapı; yeni başarı türlerinin eklenmesini kolaylaştırır ve admin panelinden yönetilebilirliği destekler.
+•	Backend; görev tamamlanınca, düello sonucu oluşunca, lig yükselince, streak günü oluşunca, hedef tamamlanınca, dünya görevine katılınca/bitince vb. olaylardan sonra milestone kontrolü yapar ve gerekiyorsa ödül verir.
+Milestone örnekleri (dokümanda verilenler)
+•	TASKS_COMPLETED: 5, 15, 50 görev
+•	DUELS_WON: 5, 10, 25 düello
+•	DUELS_WON_STREAK: üst üste 3, 5, 10
+•	PARTNER_MISSIONS_COMPLETED: 3, 10, 25
+•	GLOBAL_MISSIONS_JOINED: 5, 15, 30
+•	LEAGUE_PROMOTIONS_STREAK: üst üste 3, 5, 7 hafta lig atlama
+•	STREAK_DAYS: 7, 30, 100 gün seri
+•	GOALS_COMPLETED: 100, 250, 500 hedef
+________________________________________
+15) Arka plan işler (job/cron) — zorunlu süreçler
+Aşağıdaki işler trigger ile değil job yaklaşımıyla yürütülür:
+•	Haftalık / aylık reset süreçleri (hafta kapanışı bazlı)
+•	Günlük streak kontrolü + otomatik freeze kullanımı
+•	Süre dolum kontrolleri:
+o	UserTasks (expire → FAILED vb.)
+o	UserGoals (süresi dolan hedeflerin kalkması)
+o	Duels (WAITING → EXPIRED, ACTIVE → FINISHED değerlendirmeleri)
+•	LeagueMembers.PointsInRoom senkronizasyonu
+•	Health verisinden CurrentValue güncellemeleri (hedefler/görevler/düello/misyon progress)
+•	Weekly partner mission progress güncellemeleri
+•	Görevlerde UI “topla” penceresi (claim onayı yapılmamış kayıtların belirli kapanış sonrası işaretlenmesi)
+________________________________________
+16) Farm/istismar riskleri ve tasarımsal önlemler
+Sistemde tekrar eden ödüller ve eşleşmeler olduğu için “farm” riski doğrudan ele alınır. Koruma yaklaşımı iki katmanlıdır:
+16.1 DB seviyesinde garanti edilenler (örnekler)
+•	Aynı hafta tek lig odası üyeliği (LeagueMembers kısıtları)
+•	Weekly partner mission’da haftalık tek slot (WeeklyPartnerMissionSlots unique)
+•	Aynı ikili arasında tek WAITING/ACTIVE düello (Duels partial unique index)
+•	Puan/ödül idempotency (PointTransactions.IdempotencyKey unique)
+•	GlobalMissionContributions idempotency (IdempotencyKey unique)
+16.2 Backend seviyesinde garanti edilenler
+•	Sağlık verisi güvenilirlik kuralları (manual/unknown reddi)
+•	Expire/finalize işlemlerinin tek sefer çalışması (processed flag / idempotent akış)
+•	“Boşa düşme (leftover)” gibi istisnaların kontrollü yönetimi (farm’a izin vermeden)
+________________________________________
+17) Mimari yaklaşım (Hexagonal / Ports & Adapters)
+Backend; iş kurallarının uzun vadede bozulmaması için Hexagonal mimari ile kurgulanır.
+17.1 Katmanlar
+•	Domain: saf kurallar (streak, puan kuralı, durum geçiş koşulları)
+•	Application (Use-cases): iş akışları (tamamlama, ödüllendirme, finalize, expire)
+•	Ports: dış dünya arayüzleri (repo, push gateway, auth doğrulama, clock)
+•	Adapters/Infrastructure: DB erişimi, push sağlayıcı entegrasyonu, auth sağlayıcı doğrulaması
+17.2 Modüler sınırlar
+Sistem; iş alanlarına göre modüllere ayrılır (Identity, Health, Points, Streak, Tasks, Leagues, Duels, Missions, Notifications, Social vb.). Modüller; doğrudan birbirinin DB tablolarına “rastgele” bağlanmak yerine, use-case/port üzerinden konuşacak şekilde tasarlanır.
+________________________________________
+18) Belirtilmemiş / açık bırakılmış noktalar
+Bu dokümanda aşağıdaki konular “tek kesin değer” olarak verilmemiştir:
+•	Kesin auth sağlayıcısı (Firebase/Supabase seçenekleri belirtilmiştir). [ÖNEMLİ BELİRLEDİM ŞUANDA: FIREBASE!]
+•	Push sağlayıcı adı (model push gönderimini destekler; sağlayıcı ismi ayrıca belirtilmemiştir).
+•	Haftalık pencere kanoniktir: [Pazartesi 00:00 TR, sonraki Pazartesi 00:00 TR).
+  Finalize job'un dakika detayı (örn. 00:05) konfigürasyon olabilir.
+•	Admin panelin kesin frontend kurulumu ve tasarımı (web arayüz + zamanla genişleme hedefi nettir).
+________________________________________
+19) Kısa özet: Sistem nasıl çalışır?
+1.	Kullanıcı giriş yapar, profilini düzenler (avatar seçer).
+2.	Sağlık izni yoksa uygulama kısıtlı modda kalır; izin verince ana özellikler açılır.
+3.	Sağlık verisi düzenli aralıklarla okunur; günlük adım ve ilerlemeler güncellenir.
+4.	3000 adım streak’i korur; 3000 sonrası her 1000 adım +1 puan üretir; puanlar ledger’a yazılır.
+5.	Kullanıcı kişisel hedef oluşturur; ödül yoktur.
+6.	Admin görevleri kullanıcıya atanır; tamamlanınca puan hemen verilir; “Topla” sadece UI onayıdır.
+7.	Haftalık ligde kullanıcılar sıralanır; hafta sonunda yükselme/düşme uygulanır.
+8.	Dünya görevleri admin tarafından açılır; kullanıcı katılır ve katkı yapar (0 olamaz); sonuçta ödüller dağıtılır.
+9.	Haftalık ortak görevde kullanıcı bir partner ile eşleşir; haftalık tek eşleşme kısıtları DB ile korunur; uç durumda leftover kontrollüdür.
+10.	Düellolar mutual arkadaşlarla yapılır; aynı ikili arasında tek aktif/bekleyen kuralı vardır; expire/finalize süreçleri job ile yönetilir.
+11.	Bildirimler in-app olarak saklanır; push isteğe bağlıdır; DND açıksa push sabaha schedule edilir.
+12.	Sıralamalar haftalık lig / aylık / tüm zamanlar olarak gösterilir; puanlar ledger’dan üretilir, dönem kapanışları UserPointsHistory’ye yazılabilir.

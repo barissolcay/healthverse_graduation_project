@@ -1,0 +1,36 @@
+# --- İşletim Sistemi Dosyaları (Gereksiz) ---
+.DS_Store
+Thumbs.db
+
+# --- Editör Dosyaları (VS Code, IntelliJ vs.) ---
+.vscode/
+.idea/
+*.swp
+
+# --- Bağımlılıklar (Bunlar internetten iner, repoya atılmaz) ---
+node_modules/
+build/
+.pub/
+.dart_tool/
+__pycache__/
+*.pyc
+venv/
+env/
+
+# --- Çıktı ve Derleme Dosyaları ---
+dist/
+out/
+apk/
+*.apk
+*.aab
+
+# --- Hassas Bilgiler (KESİNLİKLE YÜKLENMEMELİ) ---
+.env
+*.key
+*.pem
+google-services.json
+GoogleService-Info.plist
+firebase-credentials.json
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
+

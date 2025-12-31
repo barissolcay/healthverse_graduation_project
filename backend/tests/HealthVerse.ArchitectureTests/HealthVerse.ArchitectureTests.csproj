@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageReference Include="coverlet.collector" Version="6.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- All Projects for Architecture Testing -->
+    <ProjectReference Include="..\..\src\Api\HealthVerse.Api\HealthVerse.Api.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\HealthVerse.Infrastructure\HealthVerse.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\HealthVerse.SharedKernel\HealthVerse.SharedKernel.csproj" />
+    
+    <!-- Identity Module -->
+    <ProjectReference Include="..\..\src\Modules\Identity\HealthVerse.Identity.Domain\HealthVerse.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\HealthVerse.Identity.Application\HealthVerse.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\HealthVerse.Identity.Infrastructure\HealthVerse.Identity.Infrastructure.csproj" />
+    
+    <!-- Social Module -->
+    <ProjectReference Include="..\..\src\Modules\Social\HealthVerse.Social.Domain\HealthVerse.Social.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Social\HealthVerse.Social.Application\HealthVerse.Social.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Social\HealthVerse.Social.Infrastructure\HealthVerse.Social.Infrastructure.csproj" />
+    
+    <!-- Tasks Module -->
+    <ProjectReference Include="..\..\src\Modules\Tasks\HealthVerse.Tasks.Domain\HealthVerse.Tasks.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tasks\HealthVerse.Tasks.Application\HealthVerse.Tasks.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Tasks\HealthVerse.Tasks.Infrastructure\HealthVerse.Tasks.Infrastructure.csproj" />
+    
+    <!-- Missions Module -->
+    <ProjectReference Include="..\..\src\Modules\Missions\HealthVerse.Missions.Domain\HealthVerse.Missions.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Missions\HealthVerse.Missions.Application\HealthVerse.Missions.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Missions\HealthVerse.Missions.Infrastructure\HealthVerse.Missions.Infrastructure.csproj" />
+    
+    <!-- Competition Module -->
+    <ProjectReference Include="..\..\src\Modules\Competition\HealthVerse.Competition.Domain\HealthVerse.Competition.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Competition\HealthVerse.Competition.Application\HealthVerse.Competition.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Competition\HealthVerse.Competition.Infrastructure\HealthVerse.Competition.Infrastructure.csproj" />
+    
+    <!-- Gamification Module -->
+    <ProjectReference Include="..\..\src\Modules\Gamification\HealthVerse.Gamification.Domain\HealthVerse.Gamification.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Gamification\HealthVerse.Gamification.Application\HealthVerse.Gamification.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Gamification\HealthVerse.Gamification.Infrastructure\HealthVerse.Gamification.Infrastructure.csproj" />
+    
+    <!-- Notifications Module -->
+    <ProjectReference Include="..\..\src\Modules\Notifications\HealthVerse.Notifications.Domain\HealthVerse.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\HealthVerse.Notifications.Application\HealthVerse.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Notifications\HealthVerse.Notifications.Infrastructure\HealthVerse.Notifications.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

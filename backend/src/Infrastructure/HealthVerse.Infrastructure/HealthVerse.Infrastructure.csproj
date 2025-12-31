@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HealthVerse.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\HealthVerse.SharedKernel\HealthVerse.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Shared\HealthVerse.Contracts\HealthVerse.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\HealthVerse.Identity.Domain\HealthVerse.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Gamification\HealthVerse.Gamification.Domain\HealthVerse.Gamification.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Competition\HealthVerse.Competition.Domain\HealthVerse.Competition.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Competition\HealthVerse.Competition.Application\HealthVerse.Competition.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Social\HealthVerse.Social.Domain\HealthVerse.Social.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Tasks\HealthVerse.Tasks.Domain\HealthVerse.Tasks.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Missions\HealthVerse.Missions.Domain\HealthVerse.Missions.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\HealthVerse.Notifications.Domain\HealthVerse.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\HealthVerse.Notifications.Application\HealthVerse.Notifications.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

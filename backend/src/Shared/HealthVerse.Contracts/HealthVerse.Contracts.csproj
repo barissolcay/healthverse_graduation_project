@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HealthVerse.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+  <!-- 
+    HEXAGONAL RULE: This project contains ONLY contracts (DTOs, Events, Interfaces).
+    NO business logic. NO implementation.
+    NO references to any Modules.* projects.
+  -->
+
+</Project>

@@ -1,0 +1,74 @@
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+launchSettings.json
+
+# Flutter/Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/*.iml
+**/local.properties
+**/.packages
+**/pubspec.lock
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets (ÖNEMLİ!)
+*.pfx
+*.p12
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json.example
+secrets.json
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Test results
+TestResults/
+coverage/
+*.trx
+
+# Node (if any)
+node_modules/
+
+# Temp files
+*.tmp
+*.temp
+*.swp
+*~

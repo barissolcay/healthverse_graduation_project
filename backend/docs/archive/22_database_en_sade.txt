@@ -1,0 +1,322 @@
+HealthVerse Veritabanı Şeması - En Sade Versiyon
+==================================================
+
+NOT: Tüm "Id" alanları UUID tipindedir (LeagueConfigs.TierName hariç, o VARCHAR PK).
+Composite PK'ler ilgili tablolarda belirtilmiştir.
+
+1. LeagueConfigs - Lig kuralları
+   - TierName
+   - TierOrder
+   - PromotePercentage
+   - DemotePercentage
+   - MinRoomSize
+   - MaxRoomSize
+
+2. Titles - Ünvan kataloğu
+   - Id
+   - Name
+   - Description
+   - ImageUrl
+   - Category
+
+3. Users - Kullanıcı profili ve oyun verisi
+   - Id
+   - Username
+   - Email
+   - AvatarId
+   - City
+   - Bio
+   - TotalPoints
+   - FreezeInventory
+   - StreakCount
+   - LastStreakDate
+   - LongestStreakCount (en uzun seri sayısı, UI'da "Seri Detayı" modalında gösterilir)
+   - TotalTasksCompleted
+   - TotalDuelsWon
+   - TotalGlobalMissions
+   - FollowingCount
+   - FollowersCount
+   - CurrentTier
+   - SelectedTitleId
+   - HealthPermissionGranted
+   - HealthPermissionGrantedAt
+   - Metadata
+   - CreatedAt
+   - UpdatedAt
+
+4. AuthIdentities - Harici auth sağlayıcı kimlik eşlemesi
+   - UserId
+   - Provider
+   - ProviderUserId
+   - CreatedAt
+
+5. UserSettings - Kullanıcı tercihleri
+   - UserId
+   - Language
+   - Theme
+   - UnitSystem
+   - NotifyDuelRequests
+   - NotifyLeagueChanges
+   - NotifyFriendActivity
+   - NotifyMissionUpdates
+   - IsPushEnabled
+   - DoNotDisturbEnabled
+   - DoNotDisturbStart
+   - DoNotDisturbEnd
+   - UpdatedAt
+
+6. Friendships - Takip ilişkisi
+   - FollowerId
+   - FollowingId
+   - CreatedAt
+
+7. Badges - Rozet kataloğu
+   - Id
+   - Name
+   - Description
+   - ImageUrl
+   - Category
+
+8. UserBadges - Kalıcı rozet sahipliği
+   - UserId
+   - BadgeId
+   - EarnedAt
+   - IsPinned
+
+9. UserBadgeAwards - Tekrarlanabilen rozet kazanç geçmişi
+   - Id
+   - UserId
+   - BadgeId
+   - AwardedAt
+   - Context
+
+10. MilestoneTypes - Milestone türleri kataloğu
+    - Id
+    - Code
+    - Name
+    - Description
+    - IsActive
+    - CreatedAt
+
+11. MilestoneRewards - Başarı eşikleri ve ödüller
+    - Id
+    - MilestoneTypeId
+    - RequiredCount
+    - BadgeId
+    - TitleId
+    - FreezeReward
+    - Description
+    - IsActive
+
+12. UserMilestones - Kullanıcı milestone başarıları
+    - UserId
+    - MilestoneId
+    - AchievedAt
+    - RewardsGranted
+
+13. PointTransactions - Puan hareket dökümü
+    - Id
+    - UserId
+    - Amount
+    - SourceType
+    - SourceIdText
+    - IdempotencyKey
+    - Description
+    - Metadata
+    - CreatedAt
+
+14. LeagueRooms - Haftalık lig odaları
+    - Id
+    - WeekId
+    - Tier
+    - UserCount
+    - StartsAt
+    - EndsAt
+    - IsProcessed
+    - ProcessedAt
+    - CreatedAt
+
+15. LeagueMembers - Lig oda üyeliği
+    - RoomId
+    - WeekId
+    - UserId
+    - PointsInRoom
+    - RankSnapshot
+    - JoinedAt
+
+16. UserGoals - Kullanıcı kişisel hedefleri
+    - Id
+    - UserId
+    - Title
+    - Description
+    - ActivityType
+    - TargetMetric
+    - TargetValue
+    - CurrentValue
+    - ValidUntil
+    - CreatedAt
+    - CompletedAt
+
+17. UserInterests - Kullanıcı ilgi alanları
+    - UserId
+    - ActivityType
+    - CreatedAt
+
+18. UserTitles - Kullanıcı ünvan sahipliği
+    - UserId
+    - TitleId
+    - EarnedAt
+
+19. TaskTemplates - Görev şablonları
+    - Id
+    - Title
+    - Description
+    - Category
+    - ActivityType
+    - TargetMetric
+    - TargetValue
+    - RewardPoints
+    - BadgeId
+    - TitleId
+    - IsActive
+
+20. UserTasks - Kullanıcı görevleri
+    - Id
+    - UserId
+    - TemplateId
+    - CurrentValue
+    - Status
+    - ValidUntil
+    - AssignedAt
+    - CompletedAt
+    - RewardClaimedAt
+    - FailedAt
+
+21. Duels - İkili rekabet
+    - Id
+    - ChallengerId
+    - OpponentId
+    - ActivityType
+    - TargetMetric
+    - TargetValue
+    - DurationDays
+    - Status
+    - ChallengerScore
+    - OpponentScore
+    - Result
+    - ChallengerLastPokeAt
+    - OpponentLastPokeAt
+    - StartDate
+    - EndDate
+    - CreatedAt
+    - UpdatedAt
+
+22. WeeklyPartnerMissions - Haftalık ikili görev
+    - Id
+    - WeekId
+    - InitiatorId
+    - PartnerId
+    - ActivityType
+    - TargetMetric
+    - TargetValue
+    - InitiatorProgress
+    - PartnerProgress
+    - Status
+    - InitiatorLastPokeAt
+    - PartnerLastPokeAt
+    - CreatedAt
+    - UpdatedAt
+
+23. WeeklyPartnerMissionSlots - Haftalık partner görev slotları
+    - WeekId
+    - UserId
+    - MissionId
+    - Not: (MissionId, WeekId) birlikte WeeklyPartnerMissions ile eşleşir (composite FK mantığı)
+
+24. GlobalMissions - Topluluk hedefi
+    - Id
+    - Title
+    - ActivityType
+    - TargetMetric
+    - TargetValue
+    - CurrentValue
+    - HiddenRewardPoints
+    - Status
+    - StartDate
+    - EndDate
+
+25. GlobalMissionContributions - Global görev katkıları
+    - Id
+    - MissionId
+    - UserId
+    - Amount
+    - IdempotencyKey
+    - CreatedAt
+
+26. GlobalMissionParticipants - Global görev katılımcıları
+    - MissionId
+    - UserId
+    - ContributionValue
+    - IsRewardClaimed
+    - JoinedAt
+
+27. UserStreakFreezeLog - Dondurma hakkı kullanım geçmişi
+    - Id
+    - UserId
+    - UsedDate
+    - StreakCountAtTime
+    - CreatedAt
+
+28. UserDailyStats - Kullanıcı günlük özetleri
+    - UserId
+    - LogDate
+    - DailySteps
+    - DailyPoints
+    - CreatedAt
+    - UpdatedAt
+
+29. UserPointsHistory - Haftalık/aylık puan geçmişi
+    - Id
+    - UserId
+    - PeriodType
+    - PeriodId
+    - Points
+    - LeagueRank
+    - TierAtTime
+    - CreatedAt
+
+30. UserDevices - Kullanıcı cihazları
+    - UserId
+    - DeviceToken
+    - Platform
+    - CreatedAt
+    - LastActiveAt
+    - RevokedAt
+
+31. Notifications - Bildirimler
+    - Id
+    - UserId
+    - Title
+    - Body
+    - DeepLink
+    - Type
+    - IsRead
+    - ReadAt
+    - CreatedAt
+    - Not: (Id, UserId) birlikte NotificationDeliveries tutarlılığı için kullanılır
+
+32. NotificationDeliveries - Push gönderim kuyruğu
+    - Id
+    - NotificationId
+    - UserId
+    - Not: (NotificationId, UserId) birlikte Notifications ile eşleşir (composite FK mantığı)
+    - Channel
+    - Status
+    - ScheduledAt
+    - SentAt
+    - AttemptCount
+    - LastError
+    - ProviderMessageId
+    - CreatedAt
+    - UpdatedAt
+

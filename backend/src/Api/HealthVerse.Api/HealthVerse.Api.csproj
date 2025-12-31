@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HealthVerse.Api</RootNamespace>
+    <UserSecretsId>993d250e-94d4-44d0-a1de-8b95d9bb63e0</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Identity\HealthVerse.Identity.Infrastructure\HealthVerse.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Gamification\HealthVerse.Gamification.Infrastructure\HealthVerse.Gamification.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Competition\HealthVerse.Competition.Infrastructure\HealthVerse.Competition.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Social\HealthVerse.Social.Infrastructure\HealthVerse.Social.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Tasks\HealthVerse.Tasks.Infrastructure\HealthVerse.Tasks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Missions\HealthVerse.Missions.Infrastructure\HealthVerse.Missions.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Notifications\HealthVerse.Notifications.Infrastructure\HealthVerse.Notifications.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCoreRateLimit" Version="5.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

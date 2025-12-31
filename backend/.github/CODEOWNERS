@@ -1,0 +1,21 @@
+# HealthVerse Code Owners
+# These owners will be automatically requested for review on PRs
+
+# Default owners for everything in the repo
+* @barissolcay
+
+# Architecture-critical files require explicit review
+/docs/architecture/ @barissolcay
+/docs/architecture/adr/ @barissolcay
+/tests/HealthVerse.ArchitectureTests/ @barissolcay
+
+# Infrastructure changes (migrations, DB, external adapters)
+/src/Infrastructure/ @barissolcay
+**/Migrations/ @barissolcay
+
+# API contracts and public interfaces
+/src/Shared/HealthVerse.Contracts/ @barissolcay
+/src/Api/HealthVerse.Api/Controllers/ @barissolcay
+
+# CI/CD configuration
+/.github/ @barissolcay
