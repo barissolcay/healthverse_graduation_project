@@ -5,7 +5,7 @@
 
 ---
 
-# 🚀 HIZLI BAŞLANGIÇ (AI için)
+# 🚀 HIZLI BAŞLANGIÇ 
 
 ## Projeyi Çalıştırma
 
