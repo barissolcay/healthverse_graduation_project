@@ -74,9 +74,12 @@ flutter test     # Unit testler
 - **Infrastructure**: DB, API, external servisler
 - **Api**: HTTP endpoint'ler
 
-### Mobile - Clean Architecture
+### Mobile - Clean Architecture + Feature-First
+- **app/theme/**: Renk, tipografi, tema (Primary: #0F9124)
 - **core/**: Ortak servisler ve utility'ler
-- **features/**: Ozellik bazli moduller (gelecekte)
+- **features/auth/**: 8 kimlik dogrulama ekrani ✅
+- **features/onboarding/**: 12 anket ekrani ✅
+- **Siradaki**: Home ekrani
 
 ## Onemli Endpoint'ler
 

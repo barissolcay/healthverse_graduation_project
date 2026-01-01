@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Seri Detayı Widget</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#2bee45",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102213",
+            },
+            fontFamily: {
+              "display": ["Public Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display">
+<div class="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img class="h-full w-full object-cover blur-md brightness-75" data-alt="Abstract image of a fitness app dashboard, showing charts and activity summaries." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyucYAaZyp2jjqTAeNq7NGwTDtlgQqdz54tVkbG7ZxpcMrbY-4oLpQX9h67NqvSzO__in55rNMDcl9oC5O45l3iRRwjMogTaCmTJawAQSKS8TagBNDtbH9iIJWsuPcBa5MxRpApYCboPpkDRsYzGPtVxoncoLaFBiy8xUSgk3e2djv-i2L6uxHx4AahWHfwRPJx3HyYDGEKpkadKldOzkZ8T7G5vXsR6sK9CiGz_kETi-jBJNL0q54L4LIz5a-T0OyDtqugfuC2Yzd"/>
+</div>
+<div class="relative z-10 flex min-h-screen w-full flex-col items-center justify-end bg-black/30 p-4 pb-8 md:justify-center">
+<div class="flex w-full max-w-sm flex-col rounded-xl bg-white dark:bg-[#1A2C1E] shadow-xl">
+<div class="flex items-center p-4 pb-2 justify-between">
+<div class="flex size-12 shrink-0 items-center"></div>
+<h2 class="text-[#2C3E50] dark:text-gray-200 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Seri Detayı</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-[#808A93] dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-6 px-6 pb-6">
+<div class="flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600" style="font-variation-settings: 'FILL' 1, 'wght' 500">local_fire_department</span>
+<h1 class="text-[#2C3E50] dark:text-white tracking-tight text-[32px] font-bold leading-tight pt-2">Serin: 10 gün</h1>
+<p class="text-[#808A93] dark:text-gray-400 text-sm font-normal leading-normal pt-1">En uzun serin: 24 gün</p>
+</div>
+<div class="flex flex-col gap-2">
+<h3 class="text-sm font-semibold text-[#808A93] dark:text-gray-400">Bugünkü ilerleme</h3>
+<div class="w-full bg-gray-200 dark:bg-[#102213] rounded-full h-2">
+<div class="bg-gradient-to-r from-orange-300 to-orange-500 dark:from-orange-400/50 dark:to-orange-400 h-2 rounded-full" style="width: 76.66%"></div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-sm font-medium text-[#2C3E50] dark:text-gray-200">2.300 / 3.000 adım</p>
+<p class="text-xs text-[#808A93] dark:text-gray-400">Hedef: 3.000 adım</p>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#102213]/50 p-4">
+<h3 class="text-sm font-semibold text-[#808A93] dark:text-gray-400">Dondurma hakkın</h3>
+<p class="text-[#2C3E50] dark:text-gray-200 font-medium">Kalan dondurma hakkın: 2</p>
+</div>
+<div class="flex flex-col gap-3">
+<h3 class="text-sm font-semibold text-[#808A93] dark:text-gray-400">Seri kuralları</h3>
+<ul class="flex flex-col gap-3 text-sm text-[#2C3E50] dark:text-gray-300">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-base text-[#27AE60] dark:text-primary mt-0.5">check_circle</span>
+<p>Her gün 3.000 adım ve üzeri atarsan serin +1 gün artar.</p>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-base text-[#27AE60] dark:text-primary mt-0.5">ac_unit</span>
+<p>3.000 adımın altında kalırsan ve dondurma hakkın varsa: Seri bozulmaz, gün sayısı değişmez, dondurma hakkın 1 azalır.</p>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-base text-[#27AE60] dark:text-primary mt-0.5">star</span>
+<p>3.000 adımın üstünde attığın her 1.000 adım için +1 puan kazanırsın.</p>
+</li>
+</ul>
+</div>
+<button class="w-full rounded-full bg-[#27AE60] dark:bg-primary py-3.5 text-base font-bold text-white transition-colors hover:bg-[#229954] dark:hover:bg-primary/90">Tamam</button>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

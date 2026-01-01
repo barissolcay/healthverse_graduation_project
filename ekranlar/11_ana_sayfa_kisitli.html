@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Healthverse Dashboard - Kısıtlı Mod</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#2bee45",
+            "background-light": "#f6f8f6",
+            "background-dark": "#102213",
+          },
+          fontFamily: {
+            "display": ["Public Sans"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+    }
+    .material-symbols-outlined.filled {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root" style="max-width: 390px; margin: auto;">
+<div class="flex-1 flex flex-col">
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+<div class="flex size-12 shrink-0 items-center">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User's profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBx81uvHxCrFHzygKGpYe8n4TgfmuMoaq88bsh5PGhxNSunPtbEi4jTX86hJRsUZTviF5Yh6fMABRwKLECMgyXedN4BLarAUrs-txyF71UPtCpwRXDjEEEt0yFPNBMnrs-bFUznydRRR0v8xdkEgNIMArqEuTmniPfuBcr4BqB-sY2xJB4_JyrAr5Ib-UhleBDDIdPf0oK4zuH1YEor7FhLHaL4hr-j0EDnukcYDeUZXS7rpauQUZe9G2d4oigwl4bBgiLxCx9hXIII");'></div>
+</div>
+<h2 class="text-[#212121] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Ana Sayfa</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="relative flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 bg-transparent text-[#212121] dark:text-white gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0">
+<span class="material-symbols-outlined">notifications</span>
+<div class="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">1</div>
+</button>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-4 flex-1 blur-sm grayscale-[50%] pointer-events-none">
+<div class="flex flex-col items-stretch justify-center rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800 p-5">
+<div class="flex items-center gap-4">
+<div class="text-6xl text-orange-400">🔥</div>
+<div class="flex flex-col">
+<p class="text-[#212121] dark:text-white text-xl font-bold leading-tight">Serin</p>
+<p class="text-[#757575] dark:text-gray-300 text-lg font-normal">10 gün</p>
+</div>
+<div class="flex-1 flex flex-col gap-2 ml-auto">
+<p class="text-[#212121] dark:text-white text-sm font-medium leading-normal text-right">3.000 / 3.000</p>
+<div class="rounded-full bg-gray-200 dark:bg-gray-700 h-2.5">
+<div class="h-2.5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 flex-1">
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Görevler</p>
+<p class="text-[#757575] dark:text-gray-300 text-sm flex-1">Süresi yaklaşan görev: Akşam yürüyüşü</p>
+<div class="rounded-full bg-gray-200 dark:bg-gray-700">
+<div class="h-2 rounded-full bg-gradient-to-r from-cyan-400 to-green-500" style="width: 75%;"></div>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 5 saat</p>
+</div>
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Hedefler</p>
+<p class="text-[#757575] dark:text-gray-300 text-sm flex-1">Süresi yaklaşan hedef: Haftalık 50k adım</p>
+<div class="rounded-full bg-gray-200 dark:bg-gray-700">
+<div class="h-2 rounded-full bg-gradient-to-r from-orange-500 to-red-600" style="width: 80%;"></div>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 2 gün</p>
+</div>
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Lig durumun</p>
+<div class="flex-1 space-y-1">
+<p class="text-[#757575] dark:text-gray-300 text-sm">Lig: Bronz 3</p>
+<p class="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-purple-500">Sıra: 3 / 20</p>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 3 gün</p>
+</div>
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Düellon</p>
+<p class="text-[#757575] dark:text-gray-300 text-sm">Rakip: sporcu_ahmet</p>
+<div class="flex-1 space-y-2.5 flex flex-col justify-end">
+<div class="h-1.5 rounded-full bg-gradient-to-r from-green-400 to-teal-400" style="width: 90%;"></div>
+<div class="h-1.5 rounded-full bg-gradient-to-r from-red-500 to-orange-400" style="width: 70%;"></div>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 5 saat</p>
+</div>
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Ortak görev</p>
+<div class="flex-1 space-y-1">
+<p class="text-[#757575] dark:text-gray-300 text-sm">Partner: fit_ayse</p>
+<p class="text-[#757575] dark:text-gray-300 text-sm">İlerleme: %60</p>
+</div>
+<div class="rounded-full bg-gray-200 dark:bg-gray-700">
+<div class="h-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" style="width: 60%;"></div>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 3 gün</p>
+</div>
+<div class="flex flex-col gap-3 p-4 rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.1)] bg-white dark:bg-gray-800">
+<p class="text-[#212121] dark:text-white text-lg font-bold">Dünya görevi</p>
+<div class="flex-1 space-y-1">
+<p class="text-[#757575] dark:text-gray-300 text-sm">Görev: 1M adım at</p>
+<p class="text-[#757575] dark:text-gray-300 text-sm">Topluluk ilerlemesi: %42</p>
+</div>
+<div class="rounded-full bg-gray-200 dark:bg-gray-700">
+<div class="h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" style="width: 42%;"></div>
+</div>
+<p class="text-orange-500 text-sm font-medium">Kalan süre: 5 gün</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 z-10">
+<div class="flex border-t border-gray-200 dark:border-gray-700 bg-background-light dark:bg-background-dark px-4 pb-3 pt-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#757575] dark:text-gray-400" href="#">
+<span class="material-symbols-outlined flex h-8 items-center justify-center">checklist</span>
+<p class="text-xs font-medium tracking-[0.015em]">Görevler</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#757575] dark:text-gray-400" href="#">
+<span class="material-symbols-outlined flex h-8 items-center justify-center">flag</span>
+<p class="text-xs font-medium tracking-[0.015em]">Hedefler</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-green-600 dark:text-primary" href="#">
+<span class="material-symbols-outlined filled flex h-8 items-center justify-center">home</span>
+<p class="text-xs font-medium tracking-[0.015em]">Ana Sayfa</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#757575] dark:text-gray-400" href="#">
+<span class="material-symbols-outlined flex h-8 items-center justify-center">leaderboard</span>
+<p class="text-xs font-medium tracking-[0.015em]">Liderlik</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#757575] dark:text-gray-400" href="#">
+<span class="material-symbols-outlined flex h-8 items-center justify-center">groups</span>
+<p class="text-xs font-medium tracking-[0.015em]">Sosyal</p>
+</a>
+</div>
+</div>
+<div class="absolute inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
+<div class="flex w-full max-w-sm flex-col items-center gap-4 rounded-xl bg-white p-6 text-center shadow-lg dark:bg-gray-800">
+<div class="relative flex items-center justify-center">
+<span class="material-symbols-outlined filled text-6xl text-gray-400 dark:text-gray-500">lock</span>
+<span class="material-symbols-outlined filled absolute text-3xl text-gray-600 dark:text-gray-400" style="font-variation-settings: 'wght' 500;">directions_walk</span>
+</div>
+<div class="flex flex-col gap-2">
+<h3 class="text-xl font-bold text-[#212121] dark:text-white">İzin gerekli</h3>
+<p class="text-sm text-[#757575] dark:text-gray-300">Adım verilerine erişim izni vermediğin için ilerlemeni ve görevlerini gösteremiyoruz.</p>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400">Uygulamanın çalışması için gerekli minimum verileri okuyoruz. Verilerin üçüncü kişilerle paylaşılmıyor ve ticari amaçla satılmıyor.</p>
+<div class="flex w-full flex-col gap-4 pt-2">
+<button class="w-full rounded-lg bg-green-600 px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-green-700">İzin ver</button>
+<button class="w-full rounded-lg px-6 py-3 text-base font-bold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Şimdilik atla</button>
+</div>
+<a class="mt-2 text-xs text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" href="#">Detaylı bilgi: Gizlilik Politikası</a>
+</div>
+</div>
+</div>
+
+</body></html>

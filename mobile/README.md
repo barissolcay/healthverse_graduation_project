@@ -99,14 +99,16 @@ static const String baseUrl = 'http://<BILGISAYAR_IP>:5000';
 - `READ_EXERCISE` - Egzersiz
 - `ACTIVITY_RECOGNITION` - Aktivite tanima
 
-### iOS (HealthKit)
-`ios/Runner/Info.plist` dosyasina eklenecek (henuz yapilmadi):
+### iOS (HealthKit) ✅
+`ios/Runner/Info.plist` dosyasinda tanimli (31 Aralik 2025):
 ```xml
 <key>NSHealthShareUsageDescription</key>
 <string>Saglik verilerinizi senkronize etmek icin izin gerekli</string>
 <key>NSHealthUpdateUsageDescription</key>
 <string>Saglik verilerinizi guncellemek icin izin gerekli</string>
 ```
+
+Ayrica `ios/Runner/Runner.entitlements` dosyasinda HealthKit capability aktif.
 
 ## Uygulama Akisi
 
@@ -177,14 +179,83 @@ Flutter `HealthDataPoint` -> Backend `HealthActivityData`:
 
 ## Sonraki Adimlar
 
+### Tamamlanan Isler (01 Ocak 2026)
+- [x] ~~iOS Info.plist HealthKit izinleri~~ (31 Aralik 2025)
+- [x] Feature-based klasor yapisi
+- [x] State management (ChangeNotifier - basit)
+- [x] UI/Tasarim sistemi (AppColors, AppTypography, AppTheme)
+- [x] Auth akisi (8 ekran)
+- [x] Onboarding anketi (12 ekran)
+
 ### Yapilacaklar
-- [ ] iOS Info.plist HealthKit izinleri
-- [ ] Firebase Auth entegrasyonu (dev-login yerine)
+- [ ] **SIRADAKI: Home ekrani**
+- [ ] Firebase Auth entegrasyonu
+- [ ] League/Lig ekrani
+- [ ] Tasks/Gorevler ekrani
+- [ ] Goals/Hedefler ekrani
 - [ ] Offline sync destegi
-- [ ] Background sync (periodic)
 - [ ] Push notification entegrasyonu
 
-### Test
+## Ekran Durumu
+
+### Auth Ekranlari (8/8 Tamamlandi)
+| Ekran | Dosya | Durum |
+|-------|-------|-------|
+| Splash | splash_screen.dart | ✅ |
+| Auth Secimi | auth_selection_screen.dart | ✅ |
+| Email Giris | email_entry_screen.dart | ✅ |
+| Email Kayit | email_register_screen.dart | ✅ |
+| Email Dogrulama | email_verification_screen.dart | ✅ |
+| Takma Ad | username_selection_screen.dart | ✅ |
+| Saglik Izni | health_permission_screen.dart | ✅ |
+| Sifremi Unuttum | forgot_password_screen.dart | ✅ |
+
+### Onboarding Anketi (12/12 Tamamlandi)
+| Ekran | Dosya | Durum |
+|-------|-------|-------|
+| Hos Geldin | onboarding_welcome_screen.dart | ✅ |
+| Dogum Yili | birth_year_screen.dart | ✅ |
+| Cinsiyet | gender_screen.dart | ✅ |
+| Sehir | city_screen.dart | ✅ |
+| Calisma Durumu | employment_screen.dart | ✅ |
+| Is Turu | work_type_screen.dart | ✅ |
+| Boy & Kilo (BMI) | body_metrics_screen.dart | ✅ |
+| Hedefler | goals_screen.dart | ✅ |
+| Aktivite Seviyesi | activity_level_screen.dart | ✅ |
+| Aktif Saatler | active_hours_screen.dart | ✅ |
+| Nereden Duydun | referral_source_screen.dart | ✅ |
+| Tamamlandi | onboarding_completion_screen.dart | ✅ |
+
+## Klasor Yapisi (Guncel)
+
+```
+lib/
+├── main.dart
+├── app/
+│   └── theme/
+│       ├── app_colors.dart      # Renk paleti (#0F9124 primary)
+│       ├── app_theme.dart       # MaterialApp tema
+│       └── app_typography.dart  # Literata font stilleri
+├── core/
+│   ├── constants/
+│   ├── network/
+│   └── services/
+└── features/
+    ├── auth/
+    │   └── presentation/
+    │       └── screens/         # 8 auth ekrani
+    └── onboarding/
+        ├── onboarding.dart      # Barrel export
+        └── presentation/
+            ├── state/
+            │   └── onboarding_state.dart  # Skip counter, BMI
+            ├── widgets/
+            │   ├── onboarding_scaffold.dart
+            │   └── survey_option_tile.dart
+            └── screens/         # 12 onboarding ekrani
+```
+
+## Test
 ```bash
 flutter test  # Unit testler
 flutter analyze  # Kod analizi
@@ -192,6 +263,7 @@ flutter analyze  # Kod analizi
 
 ## Ilgili Dokumanlar
 
+- [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) - Tasarim sistemi ve ekran listesi
 - Backend Health Sync: `backend/docs/architecture/adr/0004-flutter-health-integration.md`
 - API Inventory: `backend/docs/architecture/phase-reports/PHASE_2_API_INVENTORY.md`
-- Hexagonal Contract: `backend/docs/architecture/HEXAGONAL_CONTRACT.md`
+

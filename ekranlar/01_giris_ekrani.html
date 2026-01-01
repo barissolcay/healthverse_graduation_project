@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HealthVerse Splash Screen</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Literata:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<script>tailwind.config = {theme: {extend: {colors: {"healthverse-off-white": "#F9FAF6", primary: "#136e1f", "background-light": "#f6f8f6", "background-dark": "#122014"}, fontFamily: {display: "Literata"}, borderRadius: {DEFAULT: "0.5rem", lg: "1rem", xl: "1.5rem", full: "9999px"}}}};</script>
+<style>
+      .loader {
+        border-top-color: #16a34a;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      body {
+        min-height: -webkit-fill-available;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-healthverse-off-white">
+<div class="flex h-full min-h-screen flex-col items-center justify-between p-8">
+<div></div>
+<div class="flex flex-col items-center text-center">
+<img alt="HealthVerse logo" class="mb-4 h-auto w-48" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcnFCIQrO1npXGYiXxQpxYGwD7ngiUmnNOwGRfPzvDbFM4gSqWfgqE4TaK6kw6UQs8N0QbRrmm-2K7Pkf-47Bduu8gCA18RQjvkizn-iuk3vHGqz4Gz1azIif9t8zNu75UqzRiDtAuBQeYVoD6ReqEDcPNPQK8r2H7CIdyA1LZ2ehNQvVOin0OFh7ACMUiWtCcnqURXzTEzi42EZbV3tofw4nfU6_1kjHkjgCGIFL6pAsqT11xr5__AJp9ifjjub1b6bRs0FB8p-as"/>
+<h1 class="text-xl font-semibold text-slate-800">HealthVerse</h1>
+<p class="mt-1 text-slate-600">Rekabetin en sağlıklı hali.</p>
+</div>
+<div class="w-full flex flex-col items-center space-y-4 text-center">
+<div class="flex items-center space-x-3">
+<div class="loader h-5 w-5 rounded-full border-2 border-slate-300"></div>
+<span class="text-sm text-slate-500">Yükleniyor...</span>
+</div>
+<p class="text-xs text-slate-400">v1.0</p>
+</div>
+</div>
+</body></html>
