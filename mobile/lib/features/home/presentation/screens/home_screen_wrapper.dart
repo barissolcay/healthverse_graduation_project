@@ -8,17 +8,22 @@ import 'home_screen_restricted.dart';
 /// Health permission kontrolü yapar ve uygun ekrana yönlendirir
 class HomeScreenWrapper extends ConsumerWidget {
   const HomeScreenWrapper({super.key});
-  
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(homeScreenProvider);
-    
+
     // Health permission kontrolü
     if (!state.isHealthPermissionGranted) {
       // Kısıtlı mode - permission verilmemiş
-      return const HomeScreenRestricted();
+      return HomeScreenRestricted(
+        onPermissionRequest: () {
+          // Health permission isteği
+          ref.read(homeScreenProvider.notifier).requestHealthPermission();
+        },
+      );
     }
-    
+
     // Normal mode - permission verilmiş
     return const HomeScreenNormal();
   }

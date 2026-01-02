@@ -40,7 +40,8 @@ flutter run
 
 | Dosya | Aciklama |
 |-------|----------|
-| `mobile/lib/main.dart` | Flutter UI |
+| `mobile/lib/main.dart` | Flutter UI Entry |
+| `mobile/lib/features/home/presentation/screens/home_screen_wrapper.dart` | Ana Ekran Wrapper |
 | `mobile/lib/core/services/health_sync_service.dart` | Health paketi entegrasyonu |
 | `mobile/lib/core/constants/api_constants.dart` | API URL ayarlari |
 | `backend/src/Api/HealthVerse.Api/Controllers/HealthController.cs` | Health sync endpoint |

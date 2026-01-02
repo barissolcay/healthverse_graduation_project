@@ -1,6 +1,6 @@
 # HealthVerse Mobile - Tasarım ve Geliştirme Kılavuzu
 
-> **Son Güncelleme:** 2026-01-01  
+> **Son Güncelleme:** 2026-01-02  
 > **Amaç:** Mobile uygulamanın tüm tasarım kuralları, mimarisi ve standartlarını içerir.  
 > **Kullanım:** Herhangi bir AI asistan veya geliştirici bu dosyayı okuyarak projeye devam edebilir.
 
@@ -267,23 +267,29 @@ dependencies:
 
 ## 📦 6. KART TASARIMI
 
-### 6.1 Standart Kart
+### 6.1 BaseCard (Ortak Kart)
+Tüm özet kartları (Task, Goal, League, Duel, Mission) bu yapıyı kullanır.
 
 ```
 Özellikler:
 - Arka plan: Surface (#FFFFFF)
 - Köşe yuvarlaklığı: 16px
-- Padding: 16px
-- Elevation: 1 (veya border: 1px #E0E0E0)
-- Margin: 8px horizontal, 6px vertical
+- Border: 1px Solid (#000000 opacity %10) - Çok silik
+- Shadow: BoxShadow(color: black %20, blur: 16, offset: 0,6) - Belirgin gölge
+- İçerik Padding: 16px
+- Sol İkon: Dairesel accent background içinde
+- Sağ Badge: % veya Puan (accent color ile)
+- Alt Kısım: Kalan Süre (accent color) ve Progress Bar
 ```
 
-### 6.2 Vurgulu Kart (Accent Card)
+### 6.2 EmptyCard
+Veri olmadığında gösterilen placeholder.
 
 ```
 Özellikler:
-- Sol border: 4px accent rengi
-- Veya üst gradient: accent → transparent
+- BaseCard ile aynı yapı (boyut, gölge, border)
+- İkon: Merkezde, büyük, soluk
+- Mesaj: Merkezde açıklayıcı metin
 ```
 
 ---
@@ -350,7 +356,7 @@ dependencies:
 
 | # | Ekran | Durum | Notlar |
 |---|-------|-------|--------|
-| 1 | Home | ⏳ Bekliyor | Tüm özet kartları |
+| 1 | Home | ✅ Tamamlandı (UI) | Tüm özet kartları (BaseCard), Sections |
 | 2 | League | ⏳ Bekliyor | Sıralama + promote/demote |
 | 3 | Tasks | ⏳ Bekliyor | Aktif/Tamamlanan + Claim |
 | 4 | Goals | ⏳ Bekliyor | Hedef oluştur/takip |

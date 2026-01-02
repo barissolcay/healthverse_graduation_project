@@ -78,8 +78,8 @@ class LeagueCardModel {
   static LeagueCardModel mock() {
     return LeagueCardModel(
       leagueId: '1',
-      leagueName: 'Bronz Lig #42',
-      tierName: 'Bronz',
+      leagueName: 'TEMPO Ligi #42',
+      tierName: 'TEMPO',
       currentRank: 5,
       totalParticipants: 30,
       myPoints: 850,

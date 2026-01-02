@@ -1,6 +1,6 @@
 # HealthVerse - Proje Keşif Notları
 
-> **Son Güncelleme:** 2025-12-31 15:43  
+> **Son Güncelleme:** 2026-01-02 18:00  
 > **Amaç:** Bu doküman projeyi anlamak, çalıştırmak ve geliştirmek için gereken TÜM bilgileri içerir.
 
 ---
@@ -65,6 +65,26 @@ flutter analyze
 | 2 | `ios/Runner/Runner.entitlements` | **YENİ DOSYA** - HealthKit capability | iOS entitlement |
 | 3 | `android/app/build.gradle.kts` | `minSdk = 26` (önceden flutter default) | health package gereksinimu |
 | 4 | `android/app/src/main/AndroidManifest.xml` | Yanlış yerleştirilmiş intent-filter kaldırıldı | Build hatası düzeltmesi |
+
+---
+
+# 📋 02 OCAK 2026 OTURUMU - YAPILAN DEĞİŞİKLİKLER
+
+## Mobile UI İyileştirmeleri (Ana Ekran & Kartlar)
+
+| # | Bileşen | Değişiklik | Detay |
+|---|---------|------------|-------|
+| 1 | **Ana Ekran** | Kart Hiyerarşisi | Yatay kaydırmalı 3 bölüm: Aktiviteler, Rekabet, Sosyal |
+| 2 | **Section** | Navigasyon | Ok ikonları kaldırıldı, sadece başlıklar kaldı |
+| 3 | **BaseCard** | Yeni Tasarım | Tutarlı gölge, yuvarlak köşe, hafif border, accent color, progress & time |
+| 4 | **TasksCard** | Sadeleştirme | Sadece başlık + % badge. Süre/Detay kaldırıldı |
+| 5 | **GoalsCard** | Sadeleştirme | "Haftalık Hedef" kaldırıldı, % badge eklendi |
+| 6 | **DuelCard** | Redesign | "10000 Adım" başlığı, "Rakip" alt başlığı, Split Progress Bar (Yeşil/Kırmızı) |
+| 7 | **LeagueCard** | Redesign | "TEMPO Ligi", Bronz kaldırıldı, sıralama tekrarı önlendi, bar kaldırıldı |
+| 8 | **GlobalCard** | Redesign | "Aya Yürüyoruz" başlığı, % badge, katılımcı sayısı |
+| 9 | **Modal** | Streak Detail | Başlıklar kaldırıldı, kurallar sadeleşti, blur efektli `center_modal` yapısı |
+| 10 | **Genel** | Onboarding | İsim girme ekranı kaldırıldı (Auth'dan geliyor) |
+| 11 | **Genel** | AppBar | Sadece Avatar ve Bildirim ikonu kaldı, isim kaldırıldı |
 
 ---
 

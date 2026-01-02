@@ -34,6 +34,15 @@ class HomeDataModel {
   /// Gösterilecek hedefler (ilk 2)
   List<GoalCardModel> get displayGoals => activeGoals.take(2).toList();
 
+  /// Lig kartı alias
+  LeagueCardModel? get leagueCard => leagueInfo;
+
+  /// Aktif partner görevi alias
+  PartnerMissionModel? get activePartnerMission => partnerMission;
+
+  /// Aktif global görev alias
+  GlobalMissionModel? get activeGlobalMission => globalMission;
+
   /// Tamamlanmamış görev sayısı
   int get pendingTaskCount =>
       activeTasks.where((t) => t.status == 'ACTIVE').length;

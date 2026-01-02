@@ -1,86 +1,69 @@
 import 'package:flutter/material.dart';
-import '../../../../../app/theme/app_colors.dart';
-import '../../../../../app/theme/app_typography.dart';
+import 'package:healthverse_app/app/theme/app_colors.dart';
+import 'package:healthverse_app/app/theme/app_typography.dart';
 
-/// Bottom navigation bar
-/// 5 sekme: Görevler, Hedefler, Ana Sayfa, Liderlik, Sosyal
+/// Bottom Navigation Bar - Material 3 Standartlarına Uygun
+/// Tüm butonlar eşit boyutta, seçili olan yeşil
 class HomeBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int)? onTap;
-  
+
   const HomeBottomNavBar({
     super.key,
     required this.currentIndex,
     this.onTap,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.divider,
-            width: 1,
-          ),
+        border: const Border(
+          top: BorderSide(color: AppColors.divider, width: 1),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
       ),
       child: SafeArea(
+        top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // Görevler
               _NavItem(
                 icon: Icons.assignment_outlined,
+                selectedIcon: Icons.assignment,
                 label: 'Görevler',
-                index: 0,
-                currentIndex: currentIndex,
-                onTap: onTap,
+                isSelected: currentIndex == 0,
+                onTap: onTap != null ? () => onTap!(0) : null,
               ),
-              
-              // Hedefler
               _NavItem(
-                icon: Icons.track_changes_outlined,
+                icon: Icons.flag_outlined,
+                selectedIcon: Icons.flag,
                 label: 'Hedefler',
-                index: 1,
-                currentIndex: currentIndex,
-                onTap: onTap,
+                isSelected: currentIndex == 1,
+                onTap: onTap != null ? () => onTap!(1) : null,
               ),
-              
-              // Ana Sayfa (ortada büyük buton)
-              const Spacer(),
-              _NavCenterButton(
-                index: 2,
-                currentIndex: currentIndex,
-                onTap: onTap,
+              _NavItem(
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home,
+                label: 'Ana Sayfa',
+                isSelected: currentIndex == 2,
+                onTap: onTap != null ? () => onTap!(2) : null,
               ),
-              const Spacer(),
-              
-              // Liderlik
               _NavItem(
                 icon: Icons.emoji_events_outlined,
+                selectedIcon: Icons.emoji_events,
                 label: 'Liderlik',
-                index: 3,
-                currentIndex: currentIndex,
-                onTap: onTap,
+                isSelected: currentIndex == 3,
+                onTap: onTap != null ? () => onTap!(3) : null,
               ),
-              
-              // Sosyal
               _NavItem(
                 icon: Icons.group_outlined,
+                selectedIcon: Icons.group,
                 label: 'Sosyal',
-                index: 4,
-                currentIndex: currentIndex,
-                onTap: onTap,
+                isSelected: currentIndex == 4,
+                onTap: onTap != null ? () => onTap!(4) : null,
               ),
             ],
           ),
@@ -90,109 +73,52 @@ class HomeBottomNavBar extends StatelessWidget {
   }
 }
 
-/// Normal nav item
+/// Navigation Item - Eşit boyutlu
 class _NavItem extends StatelessWidget {
   final IconData icon;
+  final IconData selectedIcon;
   final String label;
-  final int index;
-  final int currentIndex;
-  final void Function(int)? onTap;
-  
+  final bool isSelected;
+  final VoidCallback? onTap;
+
   const _NavItem({
     required this.icon,
+    required this.selectedIcon,
     required this.label,
-    required this.index,
-    required this.currentIndex,
+    required this.isSelected,
     this.onTap,
   });
-  
+
   @override
   Widget build(BuildContext context) {
-    final isSelected = index == currentIndex;
-    
     return GestureDetector(
-      onTap: onTap != null ? () => onTap!(index) : null,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppColors.primary : AppColors.navInactive,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTypography.labelTiny.copyWith(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 64,
+        height: 56,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? selectedIcon : icon,
               color: isSelected ? AppColors.primary : AppColors.navInactive,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              size: 24,
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.navInactive,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-
-/// Center button (Ana Sayfa)
-/// Daha büyük, circular, elevated
-class _NavCenterButton extends StatelessWidget {
-  final int index;
-  final int currentIndex;
-  final void Function(int)? onTap;
-  
-  const _NavCenterButton({
-    required this.index,
-    required this.currentIndex,
-    this.onTap,
-  });
-  
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = index == currentIndex;
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Buton
-        GestureDetector(
-          onTap: onTap != null ? () => onTap!(index) : null,
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isSelected ? AppColors.primary : AppColors.surface,
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Icon(
-              Icons.home,
-              color: isSelected ? AppColors.onPrimary : AppColors.navInactive,
-              size: 28,
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 4),
-        
-        // Label
-        Text(
-          'ANA SAYFA',
-          style: AppTypography.labelTiny.copyWith(
-            color: isSelected ? AppColors.primary : AppColors.navInactive,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-

@@ -1,168 +1,64 @@
 import 'package:flutter/material.dart';
-import '../../../../../app/theme/app_colors.dart';
-import '../../../../../app/theme/app_typography.dart';
+import 'package:healthverse_app/app/theme/app_colors.dart';
 import '../../../data/models/partner_mission_model.dart';
+import 'base_card.dart';
 
-/// Partner görevi kartı
-/// Aktif partner görevini gösterir
+/// Partner Mission Card - Ortak görev kartı (Sosyal bölümü)
 class PartnerMissionCard extends StatelessWidget {
   final PartnerMissionModel mission;
   final VoidCallback? onTap;
-  
+
   const PartnerMissionCard({
     super.key,
     required this.mission,
     this.onTap,
   });
-  
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    if (mission.missionId.isEmpty) {
+      return EmptyCard(
+        title: 'Ortak Görev',
+        message: 'Partner bul',
+        icon: Icons.handshake,
+        accentColor: AppColors.accentPartner,
+        onTap: onTap,
+      );
+    }
+
+    final int percent = (mission.progressPercentage * 100).toInt();
+
+    return BaseCard(
+      title: mission.title,
+      subtitle: 'Partner: ${mission.partnerUsername}',
+      icon: Icons.handshake,
+      accentColor: AppColors.accentPartner,
+      timeRemaining: _formatDuration(mission.timeRemaining),
+      progress: mission.progressPercentage,
+      showProgress: true,
       onTap: onTap,
-      child: Container(
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 15,
-              offset: const Offset(0, -3),
-            ),
-          ],
+          color: AppColors.accentPartner.withAlpha(25),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // İkon ve başlık
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentMissions.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.handshake_outlined,
-                      color: AppColors.accentMissions,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Partner: ${mission.partnerUsername}',
-                          style: AppTypography.titleMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Ortak Görev',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Progress bar
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: mission.progressPercentage,
-                    backgroundColor: Colors.transparent,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.accentMissions,
-                    ),
-                    minHeight: 8,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // İlerleme text
-              Row(
-                children: [
-                  Text(
-                    'İlerleme',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '%${(mission.progressPercentage * 100).toInt()}',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.accentMissions,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Kalan süre
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time_outlined,
-                    color: mission.isExpired ? AppColors.error : AppColors.accentMissions,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDuration(mission.timeRemaining),
-                    style: AppTypography.labelSmall.copyWith(
-                      color: mission.isExpired ? AppColors.error : AppColors.accentMissions,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        child: Text(
+          '%$percent',
+          style: TextStyle(
+            color: AppColors.accentPartner,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
         ),
       ),
     );
   }
-  
-  String _formatDuration(Duration duration) {
-    if (duration.isNegative) {
-      return 'Süresi doldu';
-    }
-    
-    if (duration.inHours > 24) {
-      return '${duration.inDays} gün';
-    } else if (duration.inHours > 0) {
-      return '${duration.inHours} gün';
-    } else if (duration.inMinutes > 0) {
-      return '${duration.inMinutes} saat';
-    } else {
-      return 'Sonlanıyor';
-    }
+
+  String? _formatDuration(Duration duration) {
+    if (duration.isNegative) return null;
+    if (duration.inDays > 0) return '${duration.inDays} gün';
+    if (duration.inHours > 0) return '${duration.inHours} saat';
+    return '${duration.inMinutes} dk';
   }
 }
-

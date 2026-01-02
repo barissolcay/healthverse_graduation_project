@@ -188,8 +188,8 @@ Flutter `HealthDataPoint` -> Backend `HealthActivityData`:
 - [x] Onboarding anketi (12 ekran)
 
 ### Yapilacaklar
-- [ ] **SIRADAKI: Home ekrani**
-- [ ] Firebase Auth entegrasyonu
+- [x] **Home ekrani (UI Tamamlandı)**
+- [ ] **SIRADAKI: Firebase Auth Entegrasyonu**
 - [ ] League/Lig ekrani
 - [ ] Tasks/Gorevler ekrani
 - [ ] Goals/Hedefler ekrani
@@ -224,7 +224,11 @@ Flutter `HealthDataPoint` -> Backend `HealthActivityData`:
 | Aktivite Seviyesi | activity_level_screen.dart | ✅ |
 | Aktif Saatler | active_hours_screen.dart | ✅ |
 | Nereden Duydun | referral_source_screen.dart | ✅ |
-| Tamamlandi | onboarding_completion_screen.dart | ✅ |
+### Ana Uygulama Ekranları
+| Ekran | Dosya | Durum |
+|-------|-------|-------|
+| Home | home_screen_wrapper.dart | ✅ (UI) |
+| League | - | ⏳ |
 
 ## Klasor Yapisi (Guncel)
 

@@ -64,7 +64,7 @@ class PartnerMissionModel {
       missionId: '1',
       partnerId: 'p1',
       partnerUsername: 'MehmetFit',
-      title: 'Birlikte 100K Adım',
+      title: 'Birlikte 100 Bin Adım',
       activityType: 'STEPS',
       targetValue: 100000,
       myContribution: 42000,

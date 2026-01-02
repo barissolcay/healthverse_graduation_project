@@ -79,7 +79,8 @@ flutter test     # Unit testler
 - **core/**: Ortak servisler ve utility'ler
 - **features/auth/**: 8 kimlik dogrulama ekrani ✅
 - **features/onboarding/**: 12 anket ekrani ✅
-- **Siradaki**: Home ekrani
+- **features/home/**: Ana ekran (UI) ✅
+- **Siradaki**: Firebase Auth Entegrasyonu
 
 ## Onemli Endpoint'ler
 

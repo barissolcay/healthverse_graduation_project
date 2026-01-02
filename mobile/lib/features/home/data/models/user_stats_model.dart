@@ -3,6 +3,7 @@ class UserStatsModel {
   final String username;
   final String? avatarUrl;
   final int currentStreak;
+  final int longestStreak;
   final int todaySteps;
   final int todayCalories;
   final double todayDistance;
@@ -14,6 +15,7 @@ class UserStatsModel {
     required this.username,
     this.avatarUrl,
     required this.currentStreak,
+    required this.longestStreak,
     required this.todaySteps,
     required this.todayCalories,
     required this.todayDistance,
@@ -31,7 +33,7 @@ class UserStatsModel {
     return ((todaySteps - 3000) / 1000).floor();
   }
 
-  /// Adım ilerleme yüzdesi (0-100)
+  /// Adım ilerleme yüzdesi (0-1)
   double get stepProgressPercentage => (todaySteps / 3000).clamp(0.0, 1.0);
 
   /// Mock data factory
@@ -40,6 +42,7 @@ class UserStatsModel {
       username: 'TestUser',
       avatarUrl: null,
       currentStreak: 10,
+      longestStreak: 24,
       todaySteps: 4500,
       todayCalories: 320,
       todayDistance: 3.2,
@@ -54,6 +57,7 @@ class UserStatsModel {
       username: json['username'] as String? ?? 'User',
       avatarUrl: json['avatarUrl'] as String?,
       currentStreak: json['currentStreak'] as int? ?? 0,
+      longestStreak: json['longestStreak'] as int? ?? 0,
       todaySteps: json['todaySteps'] as int? ?? 0,
       todayCalories: json['todayCalories'] as int? ?? 0,
       todayDistance: (json['todayDistance'] as num?)?.toDouble() ?? 0.0,
@@ -68,6 +72,7 @@ class UserStatsModel {
       'username': username,
       'avatarUrl': avatarUrl,
       'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
       'todaySteps': todaySteps,
       'todayCalories': todayCalories,
       'todayDistance': todayDistance,
@@ -81,6 +86,7 @@ class UserStatsModel {
     String? username,
     String? avatarUrl,
     int? currentStreak,
+    int? longestStreak,
     int? todaySteps,
     int? todayCalories,
     double? todayDistance,
@@ -92,6 +98,7 @@ class UserStatsModel {
       username: username ?? this.username,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       currentStreak: currentStreak ?? this.currentStreak,
+      longestStreak: longestStreak ?? this.longestStreak,
       todaySteps: todaySteps ?? this.todaySteps,
       todayCalories: todayCalories ?? this.todayCalories,
       todayDistance: todayDistance ?? this.todayDistance,

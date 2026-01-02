@@ -1,231 +1,254 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import 'package:healthverse_app/app/theme/app_colors.dart';
 import 'package:healthverse_app/app/theme/app_typography.dart';
-import '../providers/home_screen_provider.dart';
-import '../widgets/shared/home_app_bar.dart';
-import '../widgets/shared/bottom_nav_bar.dart';
+import 'package:healthverse_app/features/home/presentation/widgets/shared/bottom_nav_bar.dart';
 
-/// Kısıtlı home screen
-/// Health permission verilmemiş kullanıcılar için
-class HomeScreenRestricted extends ConsumerWidget {
-  const HomeScreenRestricted({super.key});
-  
+/// Kısıtlı Home Screen - Sağlık verisine izin verilmemiş
+/// Arka plan blurlu, üstünde izin modal'ı
+class HomeScreenRestricted extends StatelessWidget {
+  final VoidCallback onPermissionRequest;
+
+  const HomeScreenRestricted({
+    super.key,
+    required this.onPermissionRequest,
+  });
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // Arka plan: Blur'lı placeholder kartlar
-            _buildBlurredBackground(),
-            
-            // Ön plan: AppBar + BottomNav
-            Column(
-              children: [
-                // Üst bar
-                HomeAppBar(
-                  username: 'HealthVerse',
-                  avatarUrl: null,
-                  unreadNotificationCount: 0,
-                  onNotificationTap: () {},
-                ),
-                
-                // Spacer
-                const Spacer(),
-                
-                // Alt navigation
-                HomeBottomNavBar(
-                  currentIndex: 2,
-                  onTap: (index) {},
-                ),
-              ],
-            ),
-            
-            // Modal overlay: Permission iste
-            _buildPermissionModal(context, ref),
-          ],
-        ),
+      body: Stack(
+        children: [
+          // Blurred background content
+          _buildBlurredBackground(),
+
+          // Permission modal overlay
+          _buildPermissionModal(context),
+        ],
+      ),
+      bottomNavigationBar: HomeBottomNavBar(
+        currentIndex: 2,
+        onTap: null, // Disabled in restricted mode
       ),
     );
   }
-  
+
   Widget _buildBlurredBackground() {
-    return Container(
-      color: AppColors.background,
-      child: Opacity(
-        opacity: 0.3,
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                const SizedBox(height: 100),
-                
-                // Hero card placeholder
-                Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+    return IgnorePointer(
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: ColorFiltered(
+          colorFilter: ColorFilter.mode(
+            Colors.grey.withOpacity(0.5),
+            BlendMode.saturation,
+          ),
+          child: Opacity(
+            opacity: 0.7,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Fake App Bar
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.divider,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Ana Sayfa',
+                          style: AppTypography.titleLarge.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.divider,
+                          ),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+
+                    const SizedBox(height: 20),
+
+                    // Fake Streak Card
+                    Container(
+                      height: 140,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.divider,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.local_fire_department,
+                          size: 48,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Fake Grid
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 0.9,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: List.generate(
+                          6,
+                          (index) => Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // Grid placeholders
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: 6,
-                  itemBuilder: (context, index) => _buildPlaceholderCard(),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-  
-  Widget _buildPlaceholderCard() {
+
+  Widget _buildPermissionModal(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.divider,
-                shape: BoxShape.circle,
+      color: Colors.black.withOpacity(0.3),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 20,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(4),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // İkon - kilit + yürüyüş
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.lock,
+                    size: 64,
+                    color: AppColors.textHint,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    child: Icon(
+                      Icons.directions_walk,
+                      size: 28,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: 80,
-              height: 14,
-              decoration: BoxDecoration(
-                color: AppColors.divider,
-                borderRadius: BorderRadius.circular(2),
+
+              const SizedBox(height: 20),
+
+              // Başlık
+              Text(
+                'İzin Gerekli',
+                style: AppTypography.headlineMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildPermissionModal(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Kilit ikonu
-            Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
+
+              const SizedBox(height: 12),
+
+              // Açıklama
+              Text(
+                'Sağlık verilerine erişim izni vermediğin için ilerlemeni gösteremiyoruz. '
+                'Uygulamanın çalışması için sağlığına bağlı veri akışı gerekiyor.',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              child: const Icon(
-                Icons.lock_outline,
-                color: AppColors.textSecondary,
-                size: 48,
+
+              const SizedBox(height: 16),
+
+              // Gizlilik notu
+              Text(
+                'Uygulamanın çalışması için gerekli minimum verileri okuyoruz. '
+                'Verilerin üçüncü kişilerle paylaşılmıyor ve ticari amaçla satılmıyor.',
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Başlık
-            Text(
-              'İzin gerekli',
-              style: AppTypography.headlineLarge.copyWith(
-                color: AppColors.textPrimary,
+
+              const SizedBox(height: 24),
+
+              // İzin ver butonu
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: onPermissionRequest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Text(
+                    'İzin Ver',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: AppColors.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            
-            const SizedBox(height: 12),
-            
-            // Açıklama
-            Text(
-              'Sağlık verilerine erişim izni vermediğin için ilerlemeni gösteremiyoruz. Uygulamanın çalışması için sağlığına bağlı veri akışı gerekiyor.',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // İzin ver butonu
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  ref.read(homeScreenProvider.notifier).requestHealthPermission();
+
+              const SizedBox(height: 16),
+
+              // Gizlilik politikası linki
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to privacy policy
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
                 child: Text(
-                  'İzin Ver',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: AppColors.onPrimary,
-                    fontWeight: FontWeight.w700,
+                  'Detaylı bilgi: Gizlilik Politikası',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: AppColors.textTertiary,
+                    decoration: TextDecoration.underline,
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

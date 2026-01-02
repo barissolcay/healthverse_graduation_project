@@ -25,29 +25,35 @@ class AppColors {
   static const Color onPrimary = Color(0xFFFFFFF5); // Krem beyaz
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // MODÜL ACCENT RENKLERİ
+  // MODÜL ACCENT RENKLERİ (Tasarımdan)
   // ═══════════════════════════════════════════════════════════════════════════
   
   /// Home - Ana yeşil
   static const Color accentHome = primary;
   
-  /// League - Gold/Amber
-  static const Color accentLeague = Color(0xFFFFA000);
+  /// Tasks/Görevler - Emerald (tasarımdan)
+  static const Color accentTasks = Color(0xFF10B981);
   
-  /// Tasks - Mor
-  static const Color accentTasks = Color(0xFF7B1FA2);
+  /// Goals/Hedefler - Orange (tasarımdan)
+  static const Color accentGoals = Color(0xFFF97316);
   
-  /// Goals - Mavi
-  static const Color accentGoals = Color(0xFF1976D2);
+  /// League/Lig - Yellow/Gold (tasarımdan)
+  static const Color accentLeague = Color(0xFFEAB308);
   
-  /// Duels - Turuncu/Kırmızı
-  static const Color accentDuels = Color(0xFFE64A19);
+  /// Duels/Düello - Purple (tasarımdan)
+  static const Color accentDuels = Color(0xFF8B5CF6);
   
-  /// Missions - Teal
-  static const Color accentMissions = Color(0xFF00796B);
+  /// Partner Mission/Ortak Görev - Pink (tasarımdan)
+  static const Color accentPartner = Color(0xFFEC4899);
+  
+  /// Global Mission/Dünya Görevi - Blue (tasarımdan)
+  static const Color accentGlobal = Color(0xFF2563EB);
   
   /// Profile - Indigo
   static const Color accentProfile = Color(0xFF303F9F);
+  
+  /// Missions - Teal (genel görevler)
+  static const Color accentMissions = Color(0xFF00796B);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // NÖTR RENKLER (LIGHT MODE)
